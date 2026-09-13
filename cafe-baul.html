@@ -432,6 +432,79 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
+
+  /* ---------- Setup / add-person modals (reuse sheet look) ---------- */
+
+  .field-label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+  }
+  .sheet-input {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    color: var(--ink);
+    font-family: "Work Sans", sans-serif;
+    font-size: 0.92rem;
+    padding: 11px 13px;
+    margin-bottom: 16px;
+  }
+  .sheet-input:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
+  .sheet-hint {
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    margin: -8px 0 16px;
+  }
+  .sheet-error {
+    font-size: 0.82rem;
+    color: var(--ember);
+    margin: -8px 0 14px;
+    display: none;
+  }
+  .sheet-error.show { display: block; }
+
+  .my-code-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    padding: 14px 16px;
+    margin-bottom: 32px;
+  }
+  .my-code-card .label { font-size: 0.78rem; color: var(--ink-faint); }
+  .my-code-card .code {
+    font-family: "Newsreader", serif;
+    font-style: italic;
+    font-size: 1.3rem;
+    letter-spacing: 0.04em;
+    color: var(--brass-bright);
+  }
+  .copy-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    padding: 8px 14px;
+    border-radius: var(--radius-s);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { border-color: var(--brass); color: var(--ink); }
+
+  .empty-state {
+    padding: 34px 10px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 0.88rem;
+  }
+  .empty-state strong { display: block; color: var(--ink-muted); font-size: 0.95rem; margin-bottom: 4px; font-weight: 500; }
+
+  .spinner-row { padding: 14px 6px; color: var(--ink-faint); font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -479,10 +552,18 @@
   <main class="main">
     <div class="top-row">
       <div class="greeting">
-        <h1>Buenas tardes, Daniel</h1>
-        <p>Tres perfiles tienen algo nuevo para ti.</p>
+        <h1 id="greeting-title">Bienvenido</h1>
+        <p id="greeting-sub">Cargando tu espacio…</p>
       </div>
       <div class="avatar" style="background:linear-gradient(135deg,#3a2c1e,#1f1710)"></div>
+    </div>
+
+    <div class="my-code-card" id="my-code-card" style="display:none">
+      <div>
+        <div class="label">Tu código de perfil</div>
+        <div class="code" id="my-code-value">------</div>
+      </div>
+      <button class="copy-btn" id="copy-code-btn">Copiar</button>
     </div>
 
     <div class="actions">
@@ -511,46 +592,8 @@
       <span class="sort">Recientes primero</span>
     </div>
 
-    <div class="profile-list">
-      <div class="profile-row has-update">
-        <div class="profile-avatar" style="background:linear-gradient(135deg,#5c4632,#2a1f16)"></div>
-        <div class="profile-info">
-          <div class="profile-name">Marina Cieza</div>
-          <div class="profile-tags"><span class="tag">Escritora</span><span class="tag">público</span></div>
-        </div>
-        <div class="profile-status update">Nueva publicación</div>
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
-
-      <div class="profile-row has-update">
-        <div class="profile-avatar" style="background:linear-gradient(135deg,#7a5b3a,#241a10)"></div>
-        <div class="profile-info">
-          <div class="profile-name">Iván Rosales</div>
-          <div class="profile-tags"><span class="tag">Pintor</span><span class="tag">selectivo</span></div>
-        </div>
-        <div class="profile-status update">2 publicaciones nuevas</div>
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
-
-      <div class="profile-row">
-        <div class="profile-avatar" style="background:linear-gradient(135deg,#3a4a3f,#1c241f)"></div>
-        <div class="profile-info">
-          <div class="profile-name">Lucía Ferrand</div>
-          <div class="profile-tags"><span class="tag">Música</span><span class="tag">grupal</span></div>
-        </div>
-        <div class="profile-status">Sin novedades</div>
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
-
-      <div class="profile-row">
-        <div class="profile-avatar" style="background:linear-gradient(135deg,#4a3a2e,#241a10)"></div>
-        <div class="profile-info">
-          <div class="profile-name">Tomás Elgueta</div>
-          <div class="profile-tags"><span class="tag">Diseñador</span><span class="tag">público</span></div>
-        </div>
-        <div class="profile-status">Sin novedades</div>
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
+    <div class="profile-list" id="profile-list">
+      <div class="spinner-row">Cargando perfiles…</div>
     </div>
 
     <div class="rules-card">
@@ -580,6 +623,38 @@
   <a href="#" id="mnav-publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l3-9 12-6-6 12-9 3z"/></svg>Publicar</a>
   <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja</a>
 </nav>
+
+<!-- Crear mi perfil (primera vez) -->
+<div class="sheet-overlay" id="setup-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Crea tu perfil</h3>
+    </div>
+    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Esto solo se pide una vez en este dispositivo. Al terminar, recibes tu código para compartir.</p>
+    <label class="field-label" for="setup-name">Tu nombre</label>
+    <input class="sheet-input" id="setup-name" type="text" placeholder="Cómo quieres que te vean" maxlength="40">
+    <label class="field-label" for="setup-role">Tu rol o categoría</label>
+    <input class="sheet-input" id="setup-role" type="text" placeholder="Ej: Escritor, Pintora, Música" maxlength="30">
+    <div class="sheet-error" id="setup-error">Escribe al menos tu nombre.</div>
+    <button class="sheet-submit" id="setup-submit">Crear mi perfil</button>
+  </div>
+</div>
+
+<!-- Añadir persona -->
+<div class="sheet-overlay" id="add-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Añadir persona</h3>
+      <button class="sheet-close" id="add-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <label class="field-label" for="add-code">Código de perfil</label>
+    <input class="sheet-input" id="add-code" type="text" placeholder="Ej: A1B2C3" maxlength="8" style="text-transform:uppercase">
+    <div class="sheet-error" id="add-error">No encontramos ese código.</div>
+    <button class="sheet-submit" id="add-submit">Añadir</button>
+  </div>
+</div>
 
 <!-- Publish sheet demo -->
 <div class="sheet-overlay" id="sheet-overlay">
@@ -625,15 +700,213 @@
       opt.classList.add('selected');
     });
   });
+</script>
 
-  // Placeholder for etapa 2: "Añadir persona" solo muestra un aviso por ahora.
-  document.getElementById('btn-add').addEventListener('click', () => {
-    alert('Esto se conecta en la etapa 2, cuando armemos perfiles y códigos.');
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDoc, getDocs,
+    query, where, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBvohThmYivQAwYV-J_y9E7XRAAlQo5SnU",
+    authDomain: "cafe-baul.firebaseapp.com",
+    projectId: "cafe-baul",
+    storageBucket: "cafe-baul.firebasestorage.app",
+    messagingSenderId: "803053258953",
+    appId: "1:803053258953:web:430a6b11423d2268de2518"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const perfilesRef = collection(db, "perfiles");
+
+  const LS_PROFILE = "cafeBaulMiPerfil";
+  const LS_FOLLOWED = "cafeBaulSeguidos";
+
+  const setupOverlay = document.getElementById('setup-overlay');
+  const addOverlay = document.getElementById('add-overlay');
+  const profileList = document.getElementById('profile-list');
+
+  function getFollowed() {
+    try { return JSON.parse(localStorage.getItem(LS_FOLLOWED)) || []; }
+    catch { return []; }
+  }
+  function saveFollowed(list) {
+    localStorage.setItem(LS_FOLLOWED, JSON.stringify(list));
+  }
+  function getMyProfile() {
+    try { return JSON.parse(localStorage.getItem(LS_PROFILE)); }
+    catch { return null; }
+  }
+
+  function generateCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin caracteres ambiguos
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  async function codeExists(code) {
+    const q = query(perfilesRef, where("codigo", "==", code));
+    const snap = await getDocs(q);
+    return !snap.empty;
+  }
+
+  async function createProfile(nombre, rol) {
+    let code = generateCode();
+    while (await codeExists(code)) code = generateCode();
+
+    const newDoc = doc(perfilesRef);
+    await setDoc(newDoc, {
+      nombre: nombre.trim(),
+      rol: rol.trim() || "Sin categoría",
+      codigo: code,
+      creado: serverTimestamp()
+    });
+
+    const profile = { id: newDoc.id, nombre: nombre.trim(), rol: rol.trim() || "Sin categoría", codigo: code };
+    localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
+    return profile;
+  }
+
+  async function findProfileByCode(code) {
+    const q = query(perfilesRef, where("codigo", "==", code.trim().toUpperCase()));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { id: d.id, ...d.data() };
+  }
+
+  function renderGreeting(profile) {
+    document.getElementById('greeting-title').textContent = `Buenas, ${profile.nombre.split(" ")[0]}`;
+    document.getElementById('greeting-sub').textContent = "Este es tu espacio en Café Baúl.";
+    document.getElementById('my-code-card').style.display = "flex";
+    document.getElementById('my-code-value').textContent = profile.codigo;
+  }
+
+  async function renderProfileList() {
+    const followed = getFollowed();
+    if (followed.length === 0) {
+      profileList.innerHTML = `<div class="empty-state"><strong>Aún no sigues a nadie</strong>No todo lo que importa necesita ser público. Añade a alguien con su código.</div>`;
+      return;
+    }
+    profileList.innerHTML = `<div class="spinner-row">Cargando perfiles…</div>`;
+    const rows = [];
+    for (const id of followed) {
+      try {
+        const snap = await getDoc(doc(db, "perfiles", id));
+        if (snap.exists()) rows.push({ id, ...snap.data() });
+      } catch (e) { /* perfil no disponible, se omite */ }
+    }
+    if (rows.length === 0) {
+      profileList.innerHTML = `<div class="empty-state"><strong>Aún no sigues a nadie</strong>No todo lo que importa necesita ser público. Añade a alguien con su código.</div>`;
+      return;
+    }
+    profileList.innerHTML = rows.map(p => `
+      <div class="profile-row">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#4a3a2e,#241a10)"></div>
+        <div class="profile-info">
+          <div class="profile-name">${escapeHtml(p.nombre)}</div>
+          <div class="profile-tags"><span class="tag">${escapeHtml(p.rol)}</span></div>
+        </div>
+        <div class="profile-status">Sin novedades</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    `).join("");
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function init() {
+    const mine = getMyProfile();
+    if (!mine) {
+      setupOverlay.classList.add('open');
+    } else {
+      renderGreeting(mine);
+      renderProfileList();
+    }
+  }
+
+  document.getElementById('setup-submit').addEventListener('click', async () => {
+    const nombre = document.getElementById('setup-name').value.trim();
+    const rol = document.getElementById('setup-role').value.trim();
+    const errorEl = document.getElementById('setup-error');
+    if (!nombre) { errorEl.classList.add('show'); return; }
+    errorEl.classList.remove('show');
+    const btn = document.getElementById('setup-submit');
+    btn.textContent = "Creando…";
+    btn.disabled = true;
+    try {
+      const profile = await createProfile(nombre, rol);
+      setupOverlay.classList.remove('open');
+      renderGreeting(profile);
+      renderProfileList();
+    } catch (e) {
+      errorEl.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Crear mi perfil";
+    btn.disabled = false;
   });
-  document.getElementById('mnav-add').addEventListener('click', (e) => {
-    e.preventDefault();
-    alert('Esto se conecta en la etapa 2, cuando armemos perfiles y códigos.');
+
+  function openAdd() { document.getElementById('add-error').classList.remove('show'); document.getElementById('add-code').value = ""; addOverlay.classList.add('open'); }
+  function closeAdd() { addOverlay.classList.remove('open'); }
+
+  document.getElementById('btn-add').addEventListener('click', openAdd);
+  document.getElementById('mnav-add').addEventListener('click', (e) => { e.preventDefault(); openAdd(); });
+  document.getElementById('add-close').addEventListener('click', closeAdd);
+  addOverlay.addEventListener('click', (e) => { if (e.target === addOverlay) closeAdd(); });
+
+  document.getElementById('add-submit').addEventListener('click', async () => {
+    const code = document.getElementById('add-code').value.trim().toUpperCase();
+    const errorEl = document.getElementById('add-error');
+    if (!code) return;
+    const btn = document.getElementById('add-submit');
+    btn.textContent = "Buscando…";
+    btn.disabled = true;
+    try {
+      const found = await findProfileByCode(code);
+      if (!found) {
+        errorEl.textContent = "No encontramos ese código.";
+        errorEl.classList.add('show');
+      } else {
+        const mine = getMyProfile();
+        if (mine && mine.codigo === found.codigo) {
+          errorEl.textContent = "Ese es tu propio código.";
+          errorEl.classList.add('show');
+        } else {
+          const followed = getFollowed();
+          if (!followed.includes(found.id)) {
+            followed.unshift(found.id);
+            saveFollowed(followed);
+          }
+          closeAdd();
+          renderProfileList();
+        }
+      }
+    } catch (e) {
+      errorEl.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Añadir";
+    btn.disabled = false;
   });
+
+  document.getElementById('copy-code-btn').addEventListener('click', () => {
+    const code = document.getElementById('my-code-value').textContent;
+    navigator.clipboard?.writeText(code);
+    const btn = document.getElementById('copy-code-btn');
+    btn.textContent = "Copiado";
+    setTimeout(() => btn.textContent = "Copiar", 1500);
+  });
+
+  init();
 </script>
 
 </body>
