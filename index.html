@@ -27,6 +27,7 @@
     --neon-blue-bright: #6ab0ff;
     --radius-s: 8px;
     --radius-m: 16px;
+    --radius-avatar: 26%;
   }
 
   * { box-sizing: border-box; }
@@ -152,15 +153,21 @@
   }
 
   .avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-avatar);
     background: var(--bg-elevated);
     border: 1.5px solid var(--neon-blue);
     box-shadow: 0 0 0 3px rgba(47, 125, 255, 0.14), 0 0 12px rgba(47, 125, 255, 0.45);
     flex-shrink: 0;
     background-size: cover;
     background-position: center;
+  }
+
+  .avatar-lg {
+    width: clamp(140px, 34vw, 220px);
+    height: clamp(140px, 34vw, 220px);
+    box-shadow: 0 0 0 4px rgba(47, 125, 255, 0.16), 0 0 22px rgba(47, 125, 255, 0.5);
   }
 
   .actions {
@@ -258,9 +265,9 @@
   .profile-row.has-update::before { content: none; }
 
   .profile-avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+    width: 68px;
+    height: 68px;
+    border-radius: var(--radius-avatar);
     background-size: cover;
     background-position: center;
     flex-shrink: 0;
@@ -1129,12 +1136,10 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-    <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-      <div class="avatar" id="config-avatar-preview" style="width:96px; height:96px; background-image:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
-      <div>
-        <input type="file" id="config-photo-input" accept="image/*" style="display:none;">
-        <button type="button" class="copy-btn" id="config-photo-btn">Cambiar foto de perfil</button>
-      </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:28px;">
+      <div class="avatar avatar-lg" id="config-avatar-preview" style="background-image:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
+      <input type="file" id="config-photo-input" accept="image/*" style="display:none;">
+      <button type="button" class="copy-btn" id="config-photo-btn">Cambiar foto de perfil</button>
     </div>
     <div class="my-code-card" style="margin-bottom:24px;">
       <div>
@@ -1418,8 +1423,11 @@
     // Se sube el archivo tal cual, sin pasar por un <canvas> local: en algunos
     // dispositivos el redimensionado en el navegador falla en silencio y deja
     // la imagen en negro. Cloudinary hace el recorte/optimización en su servidor.
+    // Se usa g_center (recorte centrado simple) en vez de g_auto: ese modo
+    // depende de una función de IA que en el plan gratuito puede fallar o
+    // recortar zonas sin relación con el sujeto de la foto.
     const url = await uploadToCloudinary(file, `perfiles/${uid}`, onProgress);
-    return insertCloudinaryTransform(url, 'w_480,h_480,c_fill,g_auto,q_auto,f_auto');
+    return insertCloudinaryTransform(url, 'w_480,h_480,c_fill,g_center,q_auto,f_auto');
   }
 
   function insertCloudinaryTransform(url, transform) {
