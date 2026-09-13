@@ -683,6 +683,24 @@
   }
   .comment-sent-note.show { display: block; }
 
+  .inline-comment-box {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .inline-comment-box.show { display: block; }
+  .inline-comment-box .sheet-textarea {
+    min-height: 70px;
+    margin-bottom: 10px;
+  }
+  .inline-comment-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .inline-comment-actions .sheet-submit { flex: 1; padding: 11px; font-size: 0.85rem; }
+  .inline-comment-actions .copy-btn { flex: 0 0 auto; padding: 11px 16px; font-size: 0.85rem; }
+
   .badge-count {
     display: none;
     margin-left: auto;
@@ -1027,22 +1045,6 @@
     </div>
     <div class="sheet-error" id="publish-error"></div>
     <button class="sheet-submit" id="publish-submit">Publicar</button>
-  </div>
-</div>
-
-<!-- Comentar (paso 1: solo UI, aún no guarda) -->
-<div class="sheet-overlay" id="comment-overlay">
-  <div class="sheet">
-    <div class="sheet-head">
-      <h3>Comentar</h3>
-      <button class="sheet-close" id="comment-close" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Esto llega solo a quien publicó. No es público ni abre un hilo de conversación.</p>
-    <textarea class="sheet-textarea" id="comment-text" placeholder="Escribe tu comentario…"></textarea>
-    <div class="sheet-error" id="comment-error"></div>
-    <button class="sheet-submit" id="comment-submit">Enviar comentario</button>
   </div>
 </div>
 
@@ -1463,9 +1465,74 @@
             </button>
           ` : ''}
         </div>
+        ${showComment ? `
+          <div class="inline-comment-box" id="inline-comment-${p.id}">
+            <textarea class="sheet-textarea" id="inline-comment-text-${p.id}" placeholder="Escribe tu comentario…"></textarea>
+            <div class="sheet-error" id="inline-comment-error-${p.id}"></div>
+            <div class="inline-comment-actions">
+              <button class="copy-btn inline-comment-cancel" data-post-id="${p.id}">Cancelar</button>
+              <button class="sheet-submit inline-comment-submit" data-post-id="${p.id}" data-author-id="${authorId}">Enviar comentario</button>
+            </div>
+          </div>
+        ` : ''}
         <div class="comment-sent-note" id="comment-sent-${p.id}">Enviado. Solo lo verá quien publicó.</div>
       </div>
     `;
+  }
+
+  function wireCommentButtons(container) {
+    container.querySelectorAll('.comment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const box = document.getElementById(`inline-comment-${btn.dataset.postId}`);
+        if (!box) return;
+        const wasOpen = box.classList.contains('show');
+        container.querySelectorAll('.inline-comment-box.show').forEach(b => b.classList.remove('show'));
+        if (!wasOpen) {
+          box.classList.add('show');
+          const ta = document.getElementById(`inline-comment-text-${btn.dataset.postId}`);
+          if (ta) { ta.value = ""; ta.focus(); }
+          box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    });
+    container.querySelectorAll('.inline-comment-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const box = document.getElementById(`inline-comment-${btn.dataset.postId}`);
+        if (box) box.classList.remove('show');
+      });
+    });
+    container.querySelectorAll('.inline-comment-submit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const postId = btn.dataset.postId;
+        const authorId = btn.dataset.authorId;
+        const ta = document.getElementById(`inline-comment-text-${postId}`);
+        const errorEl = document.getElementById(`inline-comment-error-${postId}`);
+        const texto = ta.value.trim();
+        errorEl.classList.remove('show');
+        if (!texto) {
+          errorEl.textContent = "Escribe algo antes de enviar.";
+          errorEl.classList.add('show');
+          return;
+        }
+        btn.textContent = "Enviando…";
+        btn.disabled = true;
+        try {
+          await createComment(postId, authorId, texto);
+          const box = document.getElementById(`inline-comment-${postId}`);
+          if (box) box.classList.remove('show');
+          const note = document.getElementById(`comment-sent-${postId}`);
+          if (note) {
+            note.classList.add('show');
+            setTimeout(() => note.classList.remove('show'), 2500);
+          }
+        } catch (e) {
+          errorEl.textContent = "No se pudo enviar. Revisa tu conexión e intenta de nuevo.";
+          errorEl.classList.add('show');
+        }
+        btn.textContent = "Enviar comentario";
+        btn.disabled = false;
+      });
+    });
   }
 
   function wireDeleteButtons(container) {
@@ -1809,9 +1876,7 @@
     } else {
       body.innerHTML = profile.posts.map(p => renderPostCardHTML(p, { showComment: true, authorId: profile.id })).join("");
 
-      body.querySelectorAll('.comment-btn').forEach(btn => {
-        btn.addEventListener('click', () => openCommentModal(btn.dataset.postId, btn.dataset.authorId));
-      });
+      wireCommentButtons(body);
     }
     if (profile.newest) setSeen(profile.id, profile.newest);
     feedOverlay.classList.add('open');
@@ -1876,48 +1941,7 @@
     btn.disabled = false;
   });
 
-  // ---------- Comentar (paso 1: solo UI) ----------
-  const commentOverlay = document.getElementById('comment-overlay');
-  let activeCommentPostId = null;
-  let activeCommentAuthorId = null;
-
-  function openCommentModal(postId, authorId) {
-    activeCommentPostId = postId;
-    activeCommentAuthorId = authorId;
-    document.getElementById('comment-text').value = "";
-    document.getElementById('comment-error').classList.remove('show');
-    commentOverlay.classList.add('open');
-  }
-  document.getElementById('comment-close').addEventListener('click', () => commentOverlay.classList.remove('open'));
-  commentOverlay.addEventListener('click', (e) => { if (e.target === commentOverlay) commentOverlay.classList.remove('open'); });
-
-  document.getElementById('comment-submit').addEventListener('click', async () => {
-    const texto = document.getElementById('comment-text').value.trim();
-    const errorEl = document.getElementById('comment-error');
-    errorEl.classList.remove('show');
-    if (!texto) {
-      errorEl.textContent = "Escribe algo antes de enviar.";
-      errorEl.classList.add('show');
-      return;
-    }
-    const btn = document.getElementById('comment-submit');
-    btn.textContent = "Enviando…";
-    btn.disabled = true;
-    try {
-      await createComment(activeCommentPostId, activeCommentAuthorId, texto);
-      commentOverlay.classList.remove('open');
-      const note = document.getElementById(`comment-sent-${activeCommentPostId}`);
-      if (note) {
-        note.classList.add('show');
-        setTimeout(() => note.classList.remove('show'), 2500);
-      }
-    } catch (e) {
-      errorEl.textContent = "No se pudo enviar. Revisa tu conexión e intenta de nuevo.";
-      errorEl.classList.add('show');
-    }
-    btn.textContent = "Enviar comentario";
-    btn.disabled = false;
-  });
+  // ---------- Comentar (inline, debajo del contenido) ----------
 
   async function init() {
     const mine = getMyProfile();
