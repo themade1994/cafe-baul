@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Café Baúl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #17110c;
+    --bg-panel: #1f1710;
+    --bg-elevated: #2a1f16;
+    --ink: #f1e6d6;
+    --ink-muted: #b6a58c;
+    --ink-faint: #8a7a63;
+    --line: #382b1d;
+    --brass: #b08347;
+    --brass-bright: #d1a467;
+    --sage: #8ba690;
+    --ember: #a85c42;
+    --radius-s: 6px;
+    --radius-m: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Work Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .serif {
+    font-family: "Newsreader", serif;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  a, button { font-family: inherit; }
+
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ---------- Left nav (desktop) ---------- */
+
+  .nav {
+    width: 216px;
+    flex-shrink: 0;
+    padding: 28px 18px;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-size: 1.05rem;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+  }
+  .brand-name span { color: var(--brass-bright); }
+
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-s);
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .nav-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .nav-link:hover { background: var(--bg-elevated); color: var(--ink); }
+
+  .nav-link.active {
+    background: rgba(176, 131, 71, 0.14);
+    color: var(--brass-bright);
+  }
+
+  .nav-foot {
+    margin-top: auto;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    padding: 0 4px;
+  }
+
+  /* ---------- Main ---------- */
+
+  .main {
+    flex: 1;
+    min-width: 0;
+    padding: 36px 40px 80px;
+    max-width: 760px;
+  }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .greeting h1 {
+    font-size: 1.7rem;
+    color: var(--ink);
+  }
+  .greeting p {
+    margin: 6px 0 0;
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .action-btn:hover { border-color: var(--brass); }
+  .action-btn:active { transform: scale(0.99); }
+
+  .action-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .action-icon.add { background: rgba(139, 166, 144, 0.18); color: var(--sage); }
+  .action-icon.publish { background: rgba(176, 131, 71, 0.18); color: var(--brass-bright); }
+  .action-icon svg { width: 19px; height: 19px; }
+
+  .action-btn strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .action-btn span.desc {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .section-head h2 { font-size: 1.15rem; }
+  .section-head .sort {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+  }
+
+  .profile-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--line);
+  }
+
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 6px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s ease;
+  }
+  .profile-row:hover { background: var(--bg-panel); }
+
+  .profile-row.has-update::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: var(--sage);
+    border-radius: 2px;
+  }
+
+  .profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+  }
+
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name {
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .profile-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    background: var(--bg-elevated);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .profile-status {
+    font-size: 0.82rem;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--ink-faint);
+  }
+  .profile-status.update { color: var(--sage); }
+
+  .chevron { color: var(--ink-faint); flex-shrink: 0; width: 16px; height: 16px; }
+
+  .rules-card {
+    margin-top: 44px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    padding: 22px 22px 8px;
+  }
+  .rules-card h3 { font-size: 1.05rem; margin-bottom: 4px; }
+  .rules-card > p {
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    margin: 0 0 18px;
+    max-width: 46ch;
+  }
+  .rule-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+  .rule-item:first-of-type { border-top: none; }
+  .rule-num {
+    font-family: "Newsreader", serif;
+    font-style: italic;
+    color: var(--brass);
+    font-size: 1rem;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .rule-item strong { display: block; font-size: 0.9rem; font-weight: 600; }
+  .rule-item p { margin: 3px 0 0; font-size: 0.83rem; color: var(--ink-faint); }
+
+  /* ---------- Mobile bottom nav ---------- */
+
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--line);
+    justify-content: space-around;
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    z-index: 20;
+  }
+  .mobile-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--ink-faint);
+    text-decoration: none;
+    font-size: 0.68rem;
+    padding: 4px 10px;
+  }
+  .mobile-nav a.active { color: var(--brass-bright); }
+  .mobile-nav svg { width: 20px; height: 20px; }
+
+  @media (max-width: 860px) {
+    .nav { display: none; }
+    .main { max-width: 100%; padding: 24px 18px 96px; }
+    .mobile-nav { display: flex; }
+    .actions { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Publish sheet (demo interaction only) ---------- */
+
+  .sheet-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10, 7, 4, 0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 30;
+  }
+  .sheet-overlay.open { display: flex; }
+
+  .sheet {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 18px 18px 0 0;
+    padding: 22px 22px calc(24px + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 861px) {
+    .sheet-overlay { align-items: center; }
+    .sheet { border-radius: var(--radius-m); border-bottom: 1px solid var(--line); }
+  }
+
+  .sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .sheet-head h3 { font-size: 1.1rem; }
+  .sheet-close {
+    background: none; border: none; color: var(--ink-faint);
+    cursor: pointer; padding: 4px;
+  }
+
+  .mode-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .mode-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+  }
+  .mode-option.selected { border-color: var(--brass); background: rgba(176,131,71,0.08); }
+  .mode-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1px solid var(--ink-faint); flex-shrink: 0;
+  }
+  .mode-option.selected .mode-dot { background: var(--brass-bright); border-color: var(--brass-bright); }
+  .mode-option strong { display: block; font-size: 0.88rem; font-weight: 600; }
+  .mode-option span { font-size: 0.78rem; color: var(--ink-faint); }
+
+  .sheet-textarea {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    color: var(--ink);
+    font-family: "Work Sans", sans-serif;
+    font-size: 0.92rem;
+    padding: 12px 14px;
+    min-height: 90px;
+    resize: vertical;
+    margin-bottom: 16px;
+  }
+  .sheet-textarea:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+  .sheet-submit {
+    width: 100%;
+    background: var(--brass);
+    color: #1a1208;
+    border: none;
+    padding: 13px;
+    border-radius: var(--radius-s);
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+  .sheet-submit:hover { background: var(--brass-bright); }
+
+  :focus-visible { outline: 2px solid var(--brass-bright); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Desktop nav -->
+  <nav class="nav">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 34 34" fill="none">
+        <path d="M7 12h16v8a8 8 0 0 1-8 8 8 8 0 0 1-8-8v-8z" stroke="#b08347" stroke-width="1.6"/>
+        <path d="M23 14h2.5a3 3 0 0 1 0 6H23" stroke="#b08347" stroke-width="1.6"/>
+        <path d="M12 8c0-1.5 1.5-1.5 1.5-3M17 8c0-1.5 1.5-1.5 1.5-3" stroke="#8ba690" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-name">Café<br><span>Baúl</span></div>
+    </div>
+
+    <div class="nav-links">
+      <a class="nav-link active" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>
+        Inicio
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+        Mis perfiles
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>
+        Añadir persona
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>
+        Bandeja
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.4-2-3.4-2.3.9a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.6a8 8 0 0 0-2.6 1.5l-2.3-.9-2 3.4 2 1.4a7.9 7.9 0 0 0 0 3l-2 1.4 2 3.4 2.3-.9a8 8 0 0 0 2.6 1.5l.5 2.6h4l.5-2.6a8 8 0 0 0 2.6-1.5l2.3.9 2-3.4-2-1.4z"/></svg>
+        Configuración
+      </a>
+    </div>
+
+    <div class="nav-foot">No todo lo que importa necesita ser público.</div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="top-row">
+      <div class="greeting">
+        <h1>Buenas tardes, Daniel</h1>
+        <p>Tres perfiles tienen algo nuevo para ti.</p>
+      </div>
+      <div class="avatar" style="background:linear-gradient(135deg,#3a2c1e,#1f1710)"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn" id="btn-add">
+        <span class="action-icon add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+        </span>
+        <span>
+          <strong>Añadir persona</strong>
+          <span class="desc">Ingresa un código de perfil</span>
+        </span>
+      </button>
+      <button class="action-btn" id="btn-publish">
+        <span class="action-icon publish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l3-9 12-6-6 12-9 3z"/></svg>
+        </span>
+        <span>
+          <strong>Publicar</strong>
+          <span class="desc">Comparte algo en segundos</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="section-head">
+      <h2>Mis perfiles</h2>
+      <span class="sort">Recientes primero</span>
+    </div>
+
+    <div class="profile-list">
+      <div class="profile-row has-update">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#5c4632,#2a1f16)"></div>
+        <div class="profile-info">
+          <div class="profile-name">Marina Cieza</div>
+          <div class="profile-tags"><span class="tag">Escritora</span><span class="tag">público</span></div>
+        </div>
+        <div class="profile-status update">Nueva publicación</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+
+      <div class="profile-row has-update">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#7a5b3a,#241a10)"></div>
+        <div class="profile-info">
+          <div class="profile-name">Iván Rosales</div>
+          <div class="profile-tags"><span class="tag">Pintor</span><span class="tag">selectivo</span></div>
+        </div>
+        <div class="profile-status update">2 publicaciones nuevas</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+
+      <div class="profile-row">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#3a4a3f,#1c241f)"></div>
+        <div class="profile-info">
+          <div class="profile-name">Lucía Ferrand</div>
+          <div class="profile-tags"><span class="tag">Música</span><span class="tag">grupal</span></div>
+        </div>
+        <div class="profile-status">Sin novedades</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+
+      <div class="profile-row">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#4a3a2e,#241a10)"></div>
+        <div class="profile-info">
+          <div class="profile-name">Tomás Elgueta</div>
+          <div class="profile-tags"><span class="tag">Diseñador</span><span class="tag">público</span></div>
+        </div>
+        <div class="profile-status">Sin novedades</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div class="rules-card">
+      <h3>Cómo funciona</h3>
+      <p>Sin buscador, sin likes, sin perfiles públicos. Solo lo que tú decides mostrar, a quien tú decides mostrárselo.</p>
+      <div class="rule-item">
+        <span class="rule-num">1</span>
+        <div><strong>Publicas en dos pasos</strong><p>Escribes o adjuntas, eliges quién lo ve, listo.</p></div>
+      </div>
+      <div class="rule-item">
+        <span class="rule-num">2</span>
+        <div><strong>Los comentarios llegan a tu bandeja</strong><p>Nadie los ve más que tú. Decides cuáles conservar.</p></div>
+      </div>
+      <div class="rule-item">
+        <span class="rule-num">3</span>
+        <div><strong>Tú eliges el alcance</strong><p>Público, selectivo por persona, o por grupo.</p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-nav">
+  <a class="active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>Inicio</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Perfiles</a>
+  <a href="#" id="mnav-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>Añadir</a>
+  <a href="#" id="mnav-publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l3-9 12-6-6 12-9 3z"/></svg>Publicar</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja</a>
+</nav>
+
+<!-- Publish sheet demo -->
+<div class="sheet-overlay" id="sheet-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Publicar</h3>
+      <button class="sheet-close" id="sheet-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="mode-options">
+      <div class="mode-option selected" data-mode="publico">
+        <span class="mode-dot"></span>
+        <span><strong>Público</strong><br><span>Cualquiera con tu código lo verá</span></span>
+      </div>
+      <div class="mode-option" data-mode="selectivo">
+        <span class="mode-dot"></span>
+        <span><strong>Selectivo</strong><br><span>Solo las personas que autorices</span></span>
+      </div>
+      <div class="mode-option" data-mode="grupal">
+        <span class="mode-dot"></span>
+        <span><strong>Grupal</strong><br><span>Elige uno de tus grupos</span></span>
+      </div>
+    </div>
+    <textarea class="sheet-textarea" placeholder="Escribe algo, o adjunta una foto, audio o video…"></textarea>
+    <button class="sheet-submit">Publicar</button>
+  </div>
+</div>
+
+<script>
+  const overlay = document.getElementById('sheet-overlay');
+  const open = () => overlay.classList.add('open');
+  const close = () => overlay.classList.remove('open');
+
+  document.getElementById('btn-publish').addEventListener('click', open);
+  document.getElementById('mnav-publish').addEventListener('click', (e) => { e.preventDefault(); open(); });
+  document.getElementById('sheet-close').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  document.querySelectorAll('.mode-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+    });
+  });
+
+  // Placeholder for etapa 2: "Añadir persona" solo muestra un aviso por ahora.
+  document.getElementById('btn-add').addEventListener('click', () => {
+    alert('Esto se conecta en la etapa 2, cuando armemos perfiles y códigos.');
+  });
+  document.getElementById('mnav-add').addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Esto se conecta en la etapa 2, cuando armemos perfiles y códigos.');
+  });
+</script>
+
+</body>
+</html>
