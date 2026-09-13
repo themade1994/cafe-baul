@@ -588,6 +588,17 @@
     height: 120px;
     display: flex;
     align-items: flex-start;
+    position: relative;
+  }
+  .recent-thumb::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 55%);
+  }
+  .recent-badge {
+    position: relative;
+    z-index: 1;
   }
   .recent-badge {
     margin: 10px;
@@ -734,17 +745,13 @@
     </div>
 
     <div class="nav-links">
-      <a class="nav-link active" href="#">
+      <a class="nav-link active" href="#" id="nav-inicio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>
         Inicio
       </a>
-      <a class="nav-link" href="#">
+      <a class="nav-link" href="#" id="nav-mis-perfiles">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
         Mis perfiles
-      </a>
-      <a class="nav-link" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>
-        Añadir persona
       </a>
       <a class="nav-link" href="#" id="nav-bandeja">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>
@@ -1355,6 +1362,15 @@
     el.style.backgroundImage = fotoUrl ? `url('${fotoUrl}')` : 'linear-gradient(135deg,#3a2c1e,#1f1710)';
   }
 
+  function videoThumbUrl(url) {
+    if (!url) return null;
+    const idx = url.lastIndexOf('.');
+    if (idx === -1) return null;
+    // Cloudinary genera automáticamente un fotograma como imagen si se pide
+    // el mismo recurso de video con extensión .jpg — no requiere procesar nada aquí.
+    return url.slice(0, idx) + '.jpg';
+  }
+
   async function createPost(tipo, texto, modo, autorizados, grupoNombre, urls) {
     const mine = getMyProfile();
     await addDoc(publicacionesRef, {
@@ -1366,6 +1382,7 @@
       pdfUrl: urls.pdfUrl || null,
       audioUrl: urls.audioUrl || null,
       videoUrl: urls.videoUrl || null,
+      videoThumbUrl: urls.videoUrl ? videoThumbUrl(urls.videoUrl) : null,
       modo,
       autorizados: (modo === 'selectivo' || modo === 'grupal') ? autorizados : [],
       grupoNombre: modo === 'grupal' ? grupoNombre : null,
@@ -1419,7 +1436,7 @@
         ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
         ${p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
         ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="width:100%; margin-top:8px; display:block;"></audio>` : ''}
-        ${p.videoUrl ? `<video src="${p.videoUrl}" controls style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;"></video>` : ''}
+        ${p.videoUrl ? `<video src="${p.videoUrl}" ${p.videoThumbUrl ? `poster="${p.videoThumbUrl}"` : ''} controls style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;"></video>` : ''}
         ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
         <div class="post-time">${timeAgo(p.creado)}</div>
         <div class="post-actions">
@@ -1529,8 +1546,9 @@
 
   function renderRecentCardHTML(p) {
     const meta = typeMeta(p.tipo);
-    const thumbStyle = p.imagenUrl
-      ? `background-image:url('${p.imagenUrl}'); background-size:cover; background-position:center;`
+    const thumbUrl = p.imagenUrl || p.videoThumbUrl || null;
+    const thumbStyle = thumbUrl
+      ? `background-image:url('${thumbUrl}'); background-size:cover; background-position:center;`
       : `background:linear-gradient(135deg, var(--bg-elevated), var(--bg-panel));`;
     return `
       <div class="recent-card">
@@ -1638,6 +1656,24 @@
 
   document.getElementById('nav-bandeja').addEventListener('click', (e) => { e.preventDefault(); openBandeja(); });
   document.getElementById('mnav-bandeja').addEventListener('click', (e) => { e.preventDefault(); openBandeja(); });
+
+  const navInicio = document.getElementById('nav-inicio');
+  const navMisPerfiles = document.getElementById('nav-mis-perfiles');
+  function setActiveNav(link) {
+    [navInicio, navMisPerfiles].forEach(a => a.classList.remove('active'));
+    link.classList.add('active');
+  }
+  navInicio.addEventListener('click', (e) => {
+    e.preventDefault();
+    setActiveNav(navInicio);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  navMisPerfiles.addEventListener('click', (e) => {
+    e.preventDefault();
+    setActiveNav(navMisPerfiles);
+    profileList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   document.getElementById('bandeja-close').addEventListener('click', () => bandejaOverlay.classList.remove('open'));
   bandejaOverlay.addEventListener('click', (e) => { if (e.target === bandejaOverlay) bandejaOverlay.classList.remove('open'); });
 
