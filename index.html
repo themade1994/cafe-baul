@@ -747,6 +747,31 @@
     white-space: nowrap;
   }
   .comment-on.missing { font-style: italic; }
+
+  .comment-group { margin-bottom: 24px; }
+  .comment-group:last-child { margin-bottom: 0; }
+  .comment-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .comment-group-head .comment-on { margin-bottom: 0; flex: 1; min-width: 0; }
+  .comment-group-count {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .comment-group-list {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    padding: 0 14px;
+    background: rgba(255,255,255,0.015);
+  }
+  .comment-group-list .comment-card:first-child { padding-top: 14px; }
+  .comment-group-list .comment-card:last-child { padding-bottom: 14px; }
   .comment-card .comment-from {
     font-size: 0.82rem;
     font-weight: 600;
@@ -1743,26 +1768,55 @@
     const postsById = {};
     myPosts.forEach(p => { postsById[p.id] = p; });
 
-    body.innerHTML = comments.map(c => {
-      const post = postsById[c.publicacionId];
-      const onHtml = post
+    // Agrupar comentarios por publicación
+    const groupsById = {};
+    const groupOrder = [];
+    comments.forEach(c => {
+      const key = c.publicacionId || '__sin_publicacion__';
+      if (!groupsById[key]) {
+        groupsById[key] = { post: postsById[c.publicacionId] || null, comments: [] };
+        groupOrder.push(key);
+      }
+      groupsById[key].comments.push(c);
+    });
+    // Cada grupo ya viene ordenado por reciente (comments ya estaba ordenado); ordenar grupos por su comentario más reciente
+    groupOrder.sort((a, b) => {
+      const aNewest = groupsById[a].comments[0]?.creado?.toMillis?.() || 0;
+      const bNewest = groupsById[b].comments[0]?.creado?.toMillis?.() || 0;
+      return bNewest - aNewest;
+    });
+
+    body.innerHTML = groupOrder.map(key => {
+      const group = groupsById[key];
+      const post = group.post;
+      const headHtml = post
         ? `<div class="comment-on">${typeMeta(post.tipo).icon}<span>${escapeHtml(recentTitle(post))}</span></div>`
         : `<div class="comment-on missing">Publicación ya no disponible</div>`;
+      const count = group.comments.length;
+      const countLabel = count === 1 ? "1 comentario" : `${count} comentarios`;
+      const cardsHtml = group.comments.map(c => `
+        <div class="comment-card" id="comment-card-${c.id}">
+          <div class="comment-from">${escapeHtml(c.remitenteNombre || "Anónimo")}</div>
+          <p>${escapeHtml(c.texto)}</p>
+          <div class="comment-time">${timeAgo(c.creado)}</div>
+          ${c.estado === 'conservado'
+            ? `<span class="comment-kept-tag">Conservado</span>`
+            : `<div class="comment-actions">
+                 <button class="keep-btn" data-id="${c.id}">Conservar</button>
+                 <button class="delete-btn" data-id="${c.id}">Eliminar</button>
+               </div>`
+          }
+        </div>
+      `).join("");
       return `
-      <div class="comment-card" id="comment-card-${c.id}">
-        ${onHtml}
-        <div class="comment-from">${escapeHtml(c.remitenteNombre || "Anónimo")}</div>
-        <p>${escapeHtml(c.texto)}</p>
-        <div class="comment-time">${timeAgo(c.creado)}</div>
-        ${c.estado === 'conservado'
-          ? `<span class="comment-kept-tag">Conservado</span>`
-          : `<div class="comment-actions">
-               <button class="keep-btn" data-id="${c.id}">Conservar</button>
-               <button class="delete-btn" data-id="${c.id}">Eliminar</button>
-             </div>`
-        }
-      </div>
-    `;
+        <div class="comment-group">
+          <div class="comment-group-head">
+            ${headHtml}
+            <span class="comment-group-count">${countLabel}</span>
+          </div>
+          <div class="comment-group-list">${cardsHtml}</div>
+        </div>
+      `;
     }).join("");
 
     body.querySelectorAll('.keep-btn').forEach(btn => {
