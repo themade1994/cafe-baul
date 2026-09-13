@@ -152,8 +152,8 @@
   }
 
   .avatar {
-    width: 40px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: var(--bg-elevated);
     border: 1.5px solid var(--neon-blue);
@@ -258,8 +258,8 @@
   .profile-row.has-update::before { content: none; }
 
   .profile-avatar {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background-size: cover;
     background-position: center;
@@ -1130,7 +1130,7 @@
       </button>
     </div>
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-      <div class="avatar" id="config-avatar-preview" style="width:64px; height:64px; background:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
+      <div class="avatar" id="config-avatar-preview" style="width:96px; height:96px; background:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
       <div>
         <input type="file" id="config-photo-input" accept="image/*" style="display:none;">
         <button type="button" class="copy-btn" id="config-photo-btn">Cambiar foto de perfil</button>
@@ -1415,9 +1415,18 @@
   }
 
   async function uploadProfilePhoto(file, uid, onProgress) {
-    const blob = await compressImage(file, 480, 0.8);
-    const photoFile = new File([blob], `${Date.now()}.jpg`, { type: 'image/jpeg' });
-    return await uploadToCloudinary(photoFile, `perfiles/${uid}`, onProgress);
+    // Se sube el archivo tal cual, sin pasar por un <canvas> local: en algunos
+    // dispositivos el redimensionado en el navegador falla en silencio y deja
+    // la imagen en negro. Cloudinary hace el recorte/optimización en su servidor.
+    const url = await uploadToCloudinary(file, `perfiles/${uid}`, onProgress);
+    return insertCloudinaryTransform(url, 'w_480,h_480,c_fill,g_auto,q_auto,f_auto');
+  }
+
+  function insertCloudinaryTransform(url, transform) {
+    const marker = '/upload/';
+    const idx = url.indexOf(marker);
+    if (idx === -1) return url;
+    return url.slice(0, idx + marker.length) + transform + '/' + url.slice(idx + marker.length);
   }
 
   async function updateMyProfilePhoto(fotoUrl) {
