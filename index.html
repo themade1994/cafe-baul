@@ -861,7 +861,7 @@
         <h1 id="greeting-title">Bienvenido</h1>
         <p id="greeting-sub">Cargando tu espacio…</p>
       </div>
-      <div class="avatar" id="btn-avatar" style="background:linear-gradient(135deg,#3d3f42,#1c1d1f); cursor:pointer;"></div>
+      <div class="avatar" id="btn-avatar" style="background-image:linear-gradient(135deg,#3d3f42,#1c1d1f); cursor:pointer;"></div>
     </div>
 
     <div class="my-code-card" id="my-code-card" style="display:none">
@@ -1130,7 +1130,7 @@
       </button>
     </div>
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-      <div class="avatar" id="config-avatar-preview" style="width:96px; height:96px; background:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
+      <div class="avatar" id="config-avatar-preview" style="width:96px; height:96px; background-image:linear-gradient(135deg,#3d3f42,#1c1d1f);"></div>
       <div>
         <input type="file" id="config-photo-input" accept="image/*" style="display:none;">
         <button type="button" class="copy-btn" id="config-photo-btn">Cambiar foto de perfil</button>
@@ -1440,6 +1440,9 @@
   function setAvatarImage(el, fotoUrl) {
     if (!el) return;
     el.style.backgroundImage = fotoUrl ? `url('${fotoUrl}')` : 'linear-gradient(135deg,#3d3f42,#1c1d1f)';
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+    el.style.backgroundRepeat = 'no-repeat';
   }
 
   function videoThumbUrl(url) {
@@ -1956,7 +1959,7 @@
     latestFollowedRows = rows;
     profileList.innerHTML = rows.map(p => `
       <div class="profile-row ${p.unreadCount > 0 ? 'has-update' : ''}" data-id="${p.id}">
-        <div class="profile-avatar" style="${p.fotoUrl ? `background-image:url('${p.fotoUrl}')` : 'background:linear-gradient(135deg,#3d3f42,#1c1d1f)'}"></div>
+        <div class="profile-avatar" style="${p.fotoUrl ? `background-image:url('${p.fotoUrl}')` : 'background-image:linear-gradient(135deg,#3d3f42,#1c1d1f)'}"></div>
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(p.nombre)}</div>
           <div class="profile-tags"><span class="tag">${escapeHtml(p.rol)}</span></div>
