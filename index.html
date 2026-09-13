@@ -727,6 +727,26 @@
     padding: 14px 4px;
   }
   .comment-card:last-child { border-bottom: none; }
+  .comment-on {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 4px 10px;
+    margin-bottom: 10px;
+    max-width: 100%;
+  }
+  .comment-on svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .comment-on span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .comment-on.missing { font-style: italic; }
   .comment-card .comment-from {
     font-size: 0.82rem;
     font-weight: 600;
@@ -1719,8 +1739,18 @@
       body.innerHTML = `<div class="empty-state"><strong>Sin comentarios todavía</strong>Aquí llegarán, en privado, los que te escriban sobre tus publicaciones.</div>`;
       return;
     }
-    body.innerHTML = comments.map(c => `
+    const myPosts = ownPosts.length ? ownPosts : await fetchOwnPosts(mine.id);
+    const postsById = {};
+    myPosts.forEach(p => { postsById[p.id] = p; });
+
+    body.innerHTML = comments.map(c => {
+      const post = postsById[c.publicacionId];
+      const onHtml = post
+        ? `<div class="comment-on">${typeMeta(post.tipo).icon}<span>${escapeHtml(recentTitle(post))}</span></div>`
+        : `<div class="comment-on missing">Publicación ya no disponible</div>`;
+      return `
       <div class="comment-card" id="comment-card-${c.id}">
+        ${onHtml}
         <div class="comment-from">${escapeHtml(c.remitenteNombre || "Anónimo")}</div>
         <p>${escapeHtml(c.texto)}</p>
         <div class="comment-time">${timeAgo(c.creado)}</div>
@@ -1732,7 +1762,8 @@
              </div>`
         }
       </div>
-    `).join("");
+    `;
+    }).join("");
 
     body.querySelectorAll('.keep-btn').forEach(btn => {
       btn.addEventListener('click', () => keepComment(btn.dataset.id));
