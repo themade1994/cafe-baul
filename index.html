@@ -362,12 +362,15 @@
     border-bottom: none;
     width: 100%;
     max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: 18px 18px 0 0;
     padding: 22px 22px calc(24px + env(safe-area-inset-bottom));
   }
   @media (min-width: 861px) {
     .sheet-overlay { align-items: center; }
-    .sheet { border-radius: var(--radius-m); border-bottom: 1px solid var(--line); }
+    .sheet { border-radius: var(--radius-m); border-bottom: 1px solid var(--line); max-height: 80vh; }
   }
 
   .sheet-head {
@@ -375,6 +378,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 18px;
+    position: sticky;
+    top: -22px;
+    background: var(--bg-panel);
+    padding: 22px 0 10px;
+    margin-top: -22px;
+    z-index: 1;
   }
   .sheet-head h3 { font-size: 1.1rem; }
   .sheet-close {
@@ -895,7 +904,7 @@
         <button type="button" class="copy-btn" id="publish-video-btn" style="width:100%;">+ Adjuntar video (máx. 2 min · 50MB)</button>
       </div>
       <div id="publish-video-preview" style="display:none; margin-bottom:16px;">
-        <video id="publish-video-player" controls style="width:100%; border-radius:var(--radius-s); display:block; margin-bottom:8px;"></video>
+        <video id="publish-video-player" controls style="width:100%; max-height:320px; border-radius:var(--radius-s); display:block; margin-bottom:8px; object-fit:contain; background:#000;"></video>
         <button type="button" class="copy-btn" id="publish-video-remove" style="width:100%;">Quitar video</button>
       </div>
     </div>
@@ -907,7 +916,7 @@
         <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%;">+ Adjuntar foto</button>
       </div>
       <div id="publish-photo-preview" style="display:none; margin-bottom:16px; position:relative;">
-        <img id="publish-photo-img" style="width:100%; border-radius:var(--radius-s); display:block;">
+        <img id="publish-photo-img" style="width:100%; max-height:320px; object-fit:contain; border-radius:var(--radius-s); display:block; background:#000;">
         <button type="button" class="copy-btn" id="publish-photo-remove" style="width:100%; margin-top:8px;">Quitar foto</button>
       </div>
     </div>
