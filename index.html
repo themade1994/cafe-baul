@@ -382,6 +382,37 @@
     cursor: pointer; padding: 4px;
   }
 
+  .type-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .type-btn {
+    flex: 1;
+    padding: 10px 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .type-btn.selected {
+    border-color: var(--brass);
+    color: var(--brass-bright);
+    background: rgba(176,131,71,0.1);
+  }
+  .file-preview-name {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
   .mode-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
   .mode-option {
     display: flex; align-items: center; gap: 12px;
@@ -481,9 +512,10 @@
   .my-code-card .code {
     font-family: "Newsreader", serif;
     font-style: italic;
-    font-size: 1.3rem;
-    letter-spacing: 0.04em;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
     color: var(--brass-bright);
+    word-break: break-all;
   }
   .copy-btn {
     background: var(--bg-elevated);
@@ -530,6 +562,81 @@
   }
   .post-card p { margin: 0; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
   .post-card .post-time { font-size: 0.75rem; color: var(--ink-faint); margin-top: 6px; }
+
+  .post-actions { display: flex; align-items: center; margin-top: 10px; }
+  .comment-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); font-size: 0.78rem;
+    font-family: inherit; padding: 4px 0;
+    transition: color 0.15s ease;
+  }
+  .comment-btn:hover { color: var(--brass-bright); }
+  .comment-btn svg { width: 15px; height: 15px; }
+
+  .comment-sent-note {
+    font-size: 0.78rem; color: var(--sage); margin-top: 8px; display: none;
+  }
+  .comment-sent-note.show { display: block; }
+
+  .badge-count {
+    display: none;
+    margin-left: auto;
+    background: var(--ember);
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+  }
+  .badge-count.show { display: inline-block; }
+  .mobile-nav a { position: relative; }
+  .mobile-nav .badge-count {
+    position: absolute;
+    top: -2px; right: 2px;
+    margin-left: 0;
+  }
+
+  .comment-card {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 4px;
+  }
+  .comment-card:last-child { border-bottom: none; }
+  .comment-card .comment-from {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--brass-bright);
+    margin-bottom: 4px;
+  }
+  .comment-card p { margin: 0; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
+  .comment-card .comment-time { font-size: 0.75rem; color: var(--ink-faint); margin-top: 6px; }
+
+  .comment-card .comment-kept-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    color: var(--sage);
+    background: rgba(139, 166, 144, 0.14);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 8px;
+  }
+  .comment-actions { display: flex; gap: 10px; margin-top: 10px; }
+  .comment-actions button {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .comment-actions .keep-btn:hover { border-color: var(--sage); color: var(--sage); }
+  .comment-actions .delete-btn:hover { border-color: var(--ember); color: var(--ember); }
 </style>
 </head>
 <body>
@@ -560,11 +667,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>
         Añadir persona
       </a>
-      <a class="nav-link" href="#">
+      <a class="nav-link" href="#" id="nav-bandeja">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>
         Bandeja
+        <span class="badge-count" id="bandeja-badge-desktop"></span>
       </a>
-      <a class="nav-link" href="#">
+      <a class="nav-link" href="#" id="nav-config">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.4-2-3.4-2.3.9a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.6a8 8 0 0 0-2.6 1.5l-2.3-.9-2 3.4 2 1.4a7.9 7.9 0 0 0 0 3l-2 1.4 2 3.4 2.3-.9a8 8 0 0 0 2.6 1.5l.5 2.6h4l.5-2.6a8 8 0 0 0 2.6-1.5l2.3.9 2-3.4-2-1.4z"/></svg>
         Configuración
       </a>
@@ -580,7 +688,7 @@
         <h1 id="greeting-title">Bienvenido</h1>
         <p id="greeting-sub">Cargando tu espacio…</p>
       </div>
-      <div class="avatar" style="background:linear-gradient(135deg,#3a2c1e,#1f1710)"></div>
+      <div class="avatar" id="btn-avatar" style="background:linear-gradient(135deg,#3a2c1e,#1f1710); cursor:pointer;"></div>
     </div>
 
     <div class="my-code-card" id="my-code-card" style="display:none">
@@ -646,7 +754,7 @@
   <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Perfiles</a>
   <a href="#" id="mnav-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>Añadir</a>
   <a href="#" id="mnav-publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l3-9 12-6-6 12-9 3z"/></svg>Publicar</a>
-  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja</a>
+  <a href="#" id="mnav-bandeja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja<span class="badge-count" id="bandeja-badge-mobile"></span></a>
 </nav>
 
 <!-- Crear mi perfil (primera vez) -->
@@ -658,10 +766,37 @@
     <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Esto solo se pide una vez en este dispositivo. Al terminar, recibes tu código para compartir.</p>
     <label class="field-label" for="setup-name">Tu nombre</label>
     <input class="sheet-input" id="setup-name" type="text" placeholder="Cómo quieres que te vean" maxlength="40">
+    <label class="field-label" for="setup-username">Nombre de usuario</label>
+    <input class="sheet-input" id="setup-username" type="text" placeholder="Sin espacios, será parte de tu código" maxlength="30">
+    <label class="field-label" for="setup-number">Tu número de Café Baúl</label>
+    <input class="sheet-input" id="setup-number" type="text" inputmode="numeric" placeholder="6 dígitos, elígelos tú y memorízalos" maxlength="6">
+    <div class="sheet-hint" id="setup-username-hint">Tu código quedará como: usuario000000@cafébaúl</div>
+    <label class="field-label" for="setup-password">Contraseña</label>
+    <input class="sheet-input" id="setup-password" type="password" placeholder="Mínimo 6 caracteres" maxlength="60">
     <label class="field-label" for="setup-role">Tu rol o categoría</label>
     <input class="sheet-input" id="setup-role" type="text" placeholder="Ej: Escritor, Pintora, Música" maxlength="30">
     <div class="sheet-error" id="setup-error">Escribe al menos tu nombre.</div>
     <button class="sheet-submit" id="setup-submit">Crear mi perfil</button>
+    <button type="button" class="copy-btn" id="goto-login" style="width:100%; margin-top:10px;">¿Ya tienes cuenta? Inicia sesión</button>
+  </div>
+</div>
+
+<!-- Iniciar sesión (otro dispositivo) -->
+<div class="sheet-overlay" id="login-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Inicia sesión</h3>
+    </div>
+    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Usa el mismo usuario, número y contraseña con los que creaste tu perfil.</p>
+    <label class="field-label" for="login-username">Nombre de usuario</label>
+    <input class="sheet-input" id="login-username" type="text" placeholder="Sin espacios" maxlength="30">
+    <label class="field-label" for="login-number">Tu número de Café Baúl</label>
+    <input class="sheet-input" id="login-number" type="text" inputmode="numeric" placeholder="6 dígitos" maxlength="6">
+    <label class="field-label" for="login-password">Contraseña</label>
+    <input class="sheet-input" id="login-password" type="password" placeholder="Tu contraseña" maxlength="60">
+    <div class="sheet-error" id="login-error"></div>
+    <button class="sheet-submit" id="login-submit">Entrar</button>
+    <button type="button" class="copy-btn" id="goto-setup" style="width:100%; margin-top:10px;">¿Aún no tienes cuenta? Créala</button>
   </div>
 </div>
 
@@ -675,7 +810,8 @@
       </button>
     </div>
     <label class="field-label" for="add-code">Código de perfil</label>
-    <input class="sheet-input" id="add-code" type="text" placeholder="Ej: A1B2C3" maxlength="8" style="text-transform:uppercase">
+    <input class="sheet-input" id="add-code" type="text" placeholder="Ej: elorbsentista@cafébaúl" maxlength="60">
+    <div class="sheet-hint" style="margin-top:-10px;">Pídele a esa persona su código completo, tal como aparece en su perfil</div>
     <div class="sheet-error" id="add-error">No encontramos ese código.</div>
     <button class="sheet-submit" id="add-submit">Añadir</button>
   </div>
@@ -690,6 +826,12 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <div class="type-tabs" id="type-tabs">
+      <button type="button" class="type-btn selected" data-type="texto">Texto</button>
+      <button type="button" class="type-btn" data-type="audio">Audio</button>
+      <button type="button" class="type-btn" data-type="video">Video</button>
+      <button type="button" class="type-btn" data-type="imagen">Imagen</button>
+    </div>
     <div class="mode-options">
       <div class="mode-option selected" data-mode="publico">
         <span class="mode-dot"></span>
@@ -699,19 +841,127 @@
         <span class="mode-dot"></span>
         <span><strong>Selectivo</strong><br><span>Solo las personas que autorices</span></span>
       </div>
-      <div class="mode-option" data-mode="grupal" style="opacity:0.45; cursor:not-allowed;">
+      <div class="mode-option" data-mode="grupal">
         <span class="mode-dot"></span>
-        <span><strong>Grupal</strong><br><span>Disponible en la próxima etapa</span></span>
+        <span><strong>Grupal</strong><br><span>Elige uno de tus grupos</span></span>
       </div>
     </div>
     <div id="selectivo-picker" style="display:none; margin-bottom:16px;">
       <div class="field-label">¿Quién puede verlo?</div>
       <div id="followers-list" style="display:flex; flex-direction:column; gap:8px; max-height:180px; overflow-y:auto;"></div>
     </div>
-    <textarea class="sheet-textarea" id="publish-text" placeholder="Escribe algo…"></textarea>
-    <div class="sheet-hint">Por ahora solo texto. Foto, audio y video llegan en una etapa próxima.</div>
+    <div id="grupal-picker" style="display:none; margin-bottom:16px;">
+      <div class="field-label">¿A qué grupo va dirigido?</div>
+      <div id="groups-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
+      <button type="button" class="copy-btn" id="new-group-toggle" style="width:100%;">+ Crear un grupo nuevo</button>
+      <div id="new-group-form" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+        <label class="field-label" for="new-group-name">Nombre del grupo</label>
+        <input class="sheet-input" id="new-group-name" type="text" placeholder="Ej: Amigos, Familia, Espacio creativo" maxlength="30">
+        <div class="field-label">¿Quién forma parte?</div>
+        <div id="new-group-members" style="display:flex; flex-direction:column; gap:8px; max-height:150px; overflow-y:auto; margin-bottom:14px;"></div>
+        <button type="button" class="copy-btn" id="new-group-save" style="width:100%;">Guardar grupo</button>
+      </div>
+    </div>
+    <textarea class="sheet-textarea" id="publish-text" placeholder="Escribe tu texto… (o adjunta un PDF si ya lo tienes trabajado)"></textarea>
+
+    <!-- Texto: PDF opcional -->
+    <div id="publish-pdf-block">
+      <input type="file" id="publish-pdf-input" accept="application/pdf" style="display:none;">
+      <div id="publish-pdf-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-pdf-btn" style="width:100%;">+ Adjuntar PDF (opcional)</button>
+      </div>
+      <div id="publish-pdf-preview" class="file-preview-name" style="display:none; margin-bottom:16px;">
+        <span id="publish-pdf-name"></span>
+        <button type="button" class="copy-btn" id="publish-pdf-remove">Quitar</button>
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <div id="publish-audio-block" style="display:none;">
+      <input type="file" id="publish-audio-input" accept="audio/*" style="display:none;">
+      <div id="publish-audio-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-audio-btn" style="width:100%;">+ Adjuntar audio (máx. 5 min · 50MB)</button>
+      </div>
+      <div id="publish-audio-preview" style="display:none; margin-bottom:16px;">
+        <audio id="publish-audio-player" controls style="width:100%; display:block; margin-bottom:8px;"></audio>
+        <button type="button" class="copy-btn" id="publish-audio-remove" style="width:100%;">Quitar audio</button>
+      </div>
+    </div>
+
+    <!-- Video -->
+    <div id="publish-video-block" style="display:none;">
+      <input type="file" id="publish-video-input" accept="video/*" style="display:none;">
+      <div id="publish-video-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-video-btn" style="width:100%;">+ Adjuntar video (máx. 2 min · 50MB)</button>
+      </div>
+      <div id="publish-video-preview" style="display:none; margin-bottom:16px;">
+        <video id="publish-video-player" controls style="width:100%; border-radius:var(--radius-s); display:block; margin-bottom:8px;"></video>
+        <button type="button" class="copy-btn" id="publish-video-remove" style="width:100%;">Quitar video</button>
+      </div>
+    </div>
+
+    <!-- Imagen -->
+    <div id="publish-image-block" style="display:none;">
+      <input type="file" id="publish-photo-input" accept="image/*" style="display:none;">
+      <div id="publish-photo-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%;">+ Adjuntar foto</button>
+      </div>
+      <div id="publish-photo-preview" style="display:none; margin-bottom:16px; position:relative;">
+        <img id="publish-photo-img" style="width:100%; border-radius:var(--radius-s); display:block;">
+        <button type="button" class="copy-btn" id="publish-photo-remove" style="width:100%; margin-top:8px;">Quitar foto</button>
+      </div>
+    </div>
     <div class="sheet-error" id="publish-error"></div>
     <button class="sheet-submit" id="publish-submit">Publicar</button>
+  </div>
+</div>
+
+<!-- Comentar (paso 1: solo UI, aún no guarda) -->
+<div class="sheet-overlay" id="comment-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Comentar</h3>
+      <button class="sheet-close" id="comment-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Esto llega solo a quien publicó. No es público ni abre un hilo de conversación.</p>
+    <textarea class="sheet-textarea" id="comment-text" placeholder="Escribe tu comentario…"></textarea>
+    <div class="sheet-error" id="comment-error"></div>
+    <button class="sheet-submit" id="comment-submit">Enviar comentario</button>
+  </div>
+</div>
+
+<!-- Bandeja de comentarios -->
+<div class="sheet-overlay" id="bandeja-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Bandeja</h3>
+      <button class="sheet-close" id="bandeja-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="bandeja-body" style="max-height:60vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- Configuración / cuenta -->
+<div class="sheet-overlay" id="config-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Tu cuenta</h3>
+      <button class="sheet-close" id="config-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="my-code-card" style="margin-bottom:24px;">
+      <div>
+        <div class="label">Tu código de perfil</div>
+        <div class="code" id="config-code-value">------</div>
+      </div>
+    </div>
+    <button class="sheet-submit" id="logout-submit" style="background:var(--ember);">Cerrar sesión</button>
+    <div class="sheet-hint" style="margin-top:12px;">Al cerrar sesión, este dispositivo olvida tu perfil y tu lista de seguidos. Para volver a entrar necesitarás tu usuario, número y contraseña.</div>
   </div>
 </div>
 
@@ -742,8 +992,14 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
   import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  import {
+    getStorage, ref, uploadBytes, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
+  import {
     getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs,
-    query, where, serverTimestamp
+    query, where, serverTimestamp, updateDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -757,14 +1013,18 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+  const storage = getStorage(app);
   const perfilesRef = collection(db, "perfiles");
   const publicacionesRef = collection(db, "publicaciones");
+  const comentariosRef = collection(db, "comentarios");
 
   const LS_PROFILE = "cafeBaulMiPerfil";
   const LS_FOLLOWED = "cafeBaulSeguidos";
   const LS_SEEN_PREFIX = "cafeBaulVisto_";
 
   const setupOverlay = document.getElementById('setup-overlay');
+  const loginOverlay = document.getElementById('login-overlay');
   const addOverlay = document.getElementById('add-overlay');
   const feedOverlay = document.getElementById('feed-overlay');
   const publishOverlay = document.getElementById('sheet-overlay');
@@ -791,38 +1051,74 @@
     localStorage.setItem(LS_SEEN_PREFIX + profileId, String(millis));
   }
 
-  function generateCode() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin caracteres ambiguos
-    let code = "";
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+  const SUFIJO_DOMINIO = "@cafébaúl";
+
+  function slugifyUsuario(str) {
+    return (str || "")
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quitar tildes
+      .replace(/[^a-z0-9]/g, ""); // solo letras y números, sin espacios
   }
 
-  async function codeExists(code) {
-    const q = query(perfilesRef, where("codigo", "==", code));
+  function soloDigitos(str) {
+    return (str || "").replace(/[^0-9]/g, "");
+  }
+
+  async function usuarioExists(usuario) {
+    const q = query(perfilesRef, where("usuario", "==", usuario));
     const snap = await getDocs(q);
     return !snap.empty;
   }
 
-  async function createProfile(nombre, rol) {
-    let code = generateCode();
-    while (await codeExists(code)) code = generateCode();
+  const DOMINIO_AUTH = "@cafebaul.app"; // versión sin tildes, solo para la cuenta interna
 
-    const newDoc = doc(perfilesRef);
+  async function createProfile(nombre, rol, usuarioDeseado, numeroDeseado, password) {
+    const base = slugifyUsuario(usuarioDeseado) || "usuario";
+    const numero = soloDigitos(numeroDeseado);
+    const usuario = base + numero;
+    if (await usuarioExists(usuario)) {
+      const err = new Error("usuario_tomado");
+      err.code = "usuario_tomado";
+      throw err;
+    }
+    const codigo = usuario + SUFIJO_DOMINIO;
+    const authEmail = usuario + DOMINIO_AUTH;
+
+    const cred = await createUserWithEmailAndPassword(auth, authEmail, password);
+
+    const newDoc = doc(perfilesRef, cred.user.uid);
     await setDoc(newDoc, {
       nombre: nombre.trim(),
       rol: rol.trim() || "Sin categoría",
-      codigo: code,
+      usuario,
+      codigo,
       creado: serverTimestamp()
     });
 
-    const profile = { id: newDoc.id, nombre: nombre.trim(), rol: rol.trim() || "Sin categoría", codigo: code };
+    const profile = { id: newDoc.id, nombre: nombre.trim(), rol: rol.trim() || "Sin categoría", usuario, codigo };
+    localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
+    return profile;
+  }
+
+  async function loginProfile(usuarioDeseado, numeroDeseado, password) {
+    const usuario = slugifyUsuario(usuarioDeseado) + soloDigitos(numeroDeseado);
+    const authEmail = usuario + DOMINIO_AUTH;
+    const cred = await signInWithEmailAndPassword(auth, authEmail, password);
+    const snap = await getDoc(doc(db, "perfiles", cred.user.uid));
+    if (!snap.exists()) {
+      const err = new Error("perfil_no_encontrado");
+      err.code = "perfil_no_encontrado";
+      throw err;
+    }
+    const data = snap.data();
+    const profile = { id: cred.user.uid, nombre: data.nombre, rol: data.rol, usuario: data.usuario, codigo: data.codigo };
     localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
     return profile;
   }
 
   async function findProfileByCode(code) {
-    const q = query(perfilesRef, where("codigo", "==", code.trim().toUpperCase()));
+    const normalizado = code.trim().toLowerCase();
+    const q = query(perfilesRef, where("codigo", "==", normalizado));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     const d = snap.docs[0];
@@ -841,14 +1137,70 @@
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  async function createPost(texto, modo, autorizados) {
+  function gruposRef(myId) {
+    return collection(db, "perfiles", myId, "grupos");
+  }
+
+  async function createGroup(myId, nombre, miembros) {
+    const newDoc = doc(gruposRef(myId));
+    await setDoc(newDoc, { nombre: nombre.trim(), miembros, creado: serverTimestamp() });
+    return { id: newDoc.id, nombre: nombre.trim(), miembros };
+  }
+
+  async function getMyGroups(myId) {
+    const snap = await getDocs(gruposRef(myId));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  function compressImage(file, maxWidth = 1280, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => { img.src = e.target.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPostImage(blob, autorId) {
+    const path = `publicaciones/${autorId}/${Date.now()}.jpg`;
+    const fileRef = ref(storage, path);
+    await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+    return await getDownloadURL(fileRef);
+  }
+
+  async function uploadPostFile(file, autorId, subfolder) {
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const path = `publicaciones/${autorId}/${subfolder}/${Date.now()}.${ext}`;
+    const fileRef = ref(storage, path);
+    await uploadBytes(fileRef, file, { contentType: file.type || 'application/octet-stream' });
+    return await getDownloadURL(fileRef);
+  }
+
+  async function createPost(tipo, texto, modo, autorizados, grupoNombre, urls) {
     const mine = getMyProfile();
     await addDoc(publicacionesRef, {
       autorId: mine.id,
       autorNombre: mine.nombre,
+      tipo,
       texto,
+      imagenUrl: urls.imagenUrl || null,
+      pdfUrl: urls.pdfUrl || null,
+      audioUrl: urls.audioUrl || null,
+      videoUrl: urls.videoUrl || null,
       modo,
-      autorizados: modo === 'selectivo' ? autorizados : [],
+      autorizados: (modo === 'selectivo' || modo === 'grupal') ? autorizados : [],
+      grupoNombre: modo === 'grupal' ? grupoNombre : null,
       creado: serverTimestamp()
     });
   }
@@ -859,16 +1211,109 @@
     let all = snapPublico.docs.map(d => ({ id: d.id, ...d.data() }));
 
     if (viewerId) {
-      const qSelectivo = query(
-        publicacionesRef, where("autorId", "==", autorId),
-        where("modo", "==", "selectivo"), where("autorizados", "array-contains", viewerId)
-      );
-      const snapSelectivo = await getDocs(qSelectivo);
-      all = all.concat(snapSelectivo.docs.map(d => ({ id: d.id, ...d.data() })));
+      for (const modo of ["selectivo", "grupal"]) {
+        const qRestringido = query(
+          publicacionesRef, where("autorId", "==", autorId),
+          where("modo", "==", modo), where("autorizados", "array-contains", viewerId)
+        );
+        const snapRestringido = await getDocs(qRestringido);
+        all = all.concat(snapRestringido.docs.map(d => ({ id: d.id, ...d.data() })));
+      }
     }
 
     all.sort((a, b) => (b.creado?.toMillis?.() || 0) - (a.creado?.toMillis?.() || 0));
     return all;
+  }
+
+  async function createComment(postId, autorId, texto) {
+    const mine = getMyProfile();
+    await addDoc(comentariosRef, {
+      publicacionId: postId,
+      destinatarioId: autorId,
+      remitenteId: mine?.id || null,
+      remitenteNombre: mine?.nombre || "Anónimo",
+      texto,
+      estado: "pendiente",
+      creado: serverTimestamp()
+    });
+  }
+
+  // ---------- Bandeja (paso 4: solo lectura) ----------
+  const bandejaOverlay = document.getElementById('bandeja-overlay');
+
+  async function openBandeja() {
+    const mine = getMyProfile();
+    const body = document.getElementById('bandeja-body');
+    bandejaOverlay.classList.add('open');
+    if (!mine) {
+      body.innerHTML = `<div class="empty-state"><strong>Sin perfil</strong>Crea tu perfil primero.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="spinner-row">Cargando comentarios…</div>`;
+    const q = query(comentariosRef, where("destinatarioId", "==", mine.id));
+    const snap = await getDocs(q);
+    let comments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    comments.sort((a, b) => (b.creado?.toMillis?.() || 0) - (a.creado?.toMillis?.() || 0));
+    if (comments.length === 0) {
+      body.innerHTML = `<div class="empty-state"><strong>Sin comentarios todavía</strong>Aquí llegarán, en privado, los que te escriban sobre tus publicaciones.</div>`;
+      return;
+    }
+    body.innerHTML = comments.map(c => `
+      <div class="comment-card" id="comment-card-${c.id}">
+        <div class="comment-from">${escapeHtml(c.remitenteNombre || "Anónimo")}</div>
+        <p>${escapeHtml(c.texto)}</p>
+        <div class="comment-time">${timeAgo(c.creado)}</div>
+        ${c.estado === 'conservado'
+          ? `<span class="comment-kept-tag">Conservado</span>`
+          : `<div class="comment-actions">
+               <button class="keep-btn" data-id="${c.id}">Conservar</button>
+               <button class="delete-btn" data-id="${c.id}">Eliminar</button>
+             </div>`
+        }
+      </div>
+    `).join("");
+
+    body.querySelectorAll('.keep-btn').forEach(btn => {
+      btn.addEventListener('click', () => keepComment(btn.dataset.id));
+    });
+    body.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => removeComment(btn.dataset.id));
+    });
+  }
+
+  async function keepComment(commentId) {
+    await updateDoc(doc(db, "comentarios", commentId), { estado: "conservado" });
+    const card = document.getElementById(`comment-card-${commentId}`);
+    if (card) {
+      const actions = card.querySelector('.comment-actions');
+      if (actions) actions.outerHTML = `<span class="comment-kept-tag">Conservado</span>`;
+    }
+    refreshBandejaBadge();
+  }
+
+  async function removeComment(commentId) {
+    await deleteDoc(doc(db, "comentarios", commentId));
+    const card = document.getElementById(`comment-card-${commentId}`);
+    if (card) card.remove();
+    refreshBandejaBadge();
+  }
+
+  document.getElementById('nav-bandeja').addEventListener('click', (e) => { e.preventDefault(); openBandeja(); });
+  document.getElementById('mnav-bandeja').addEventListener('click', (e) => { e.preventDefault(); openBandeja(); });
+  document.getElementById('bandeja-close').addEventListener('click', () => bandejaOverlay.classList.remove('open'));
+  bandejaOverlay.addEventListener('click', (e) => { if (e.target === bandejaOverlay) bandejaOverlay.classList.remove('open'); });
+
+  async function refreshBandejaBadge() {
+    const mine = getMyProfile();
+    if (!mine) return;
+    const q = query(comentariosRef, where("destinatarioId", "==", mine.id), where("estado", "==", "pendiente"));
+    const snap = await getDocs(q);
+    const count = snap.size;
+    [document.getElementById('bandeja-badge-desktop'), document.getElementById('bandeja-badge-mobile')].forEach(el => {
+      if (!el) return;
+      el.textContent = count > 9 ? "9+" : String(count);
+      el.classList.toggle('show', count > 0);
+    });
   }
 
   function timeAgo(timestamp) {
@@ -949,17 +1394,109 @@
     } else {
       body.innerHTML = profile.posts.map(p => `
         <div class="post-card">
-          <div class="post-mode">${p.modo === 'publico' ? 'Público' : 'Selectivo · autorizado para ti'}</div>
-          <p>${escapeHtml(p.texto)}</p>
+          <div class="post-mode">${
+            p.modo === 'publico' ? 'Público' :
+            p.modo === 'grupal' ? `Grupal · ${escapeHtml(p.grupoNombre || 'grupo')}` :
+            'Selectivo · autorizado para ti'
+          }</div>
+          ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
+          ${p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
+          ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="width:100%; margin-top:8px; display:block;"></audio>` : ''}
+          ${p.videoUrl ? `<video src="${p.videoUrl}" controls style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;"></video>` : ''}
+          ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
           <div class="post-time">${timeAgo(p.creado)}</div>
+          <div class="post-actions">
+            <button class="comment-btn" data-post-id="${p.id}" data-author-id="${profile.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+              Comentar
+            </button>
+          </div>
+          <div class="comment-sent-note" id="comment-sent-${p.id}">Enviado. Solo lo verá quien publicó.</div>
         </div>
       `).join("");
+
+      body.querySelectorAll('.comment-btn').forEach(btn => {
+        btn.addEventListener('click', () => openCommentModal(btn.dataset.postId, btn.dataset.authorId));
+      });
     }
     if (profile.newest) setSeen(profile.id, profile.newest);
     feedOverlay.classList.add('open');
   }
   document.getElementById('feed-close').addEventListener('click', () => feedOverlay.classList.remove('open'));
   feedOverlay.addEventListener('click', (e) => { if (e.target === feedOverlay) feedOverlay.classList.remove('open'); });
+
+  // ---------- Configuración / cerrar sesión ----------
+  const configOverlay = document.getElementById('config-overlay');
+
+  function openConfig() {
+    const mine = getMyProfile();
+    document.getElementById('config-code-value').textContent = mine?.codigo || "------";
+    configOverlay.classList.add('open');
+  }
+  document.getElementById('nav-config').addEventListener('click', (e) => { e.preventDefault(); openConfig(); });
+  document.getElementById('btn-avatar').addEventListener('click', openConfig);
+  document.getElementById('config-close').addEventListener('click', () => configOverlay.classList.remove('open'));
+  configOverlay.addEventListener('click', (e) => { if (e.target === configOverlay) configOverlay.classList.remove('open'); });
+
+  document.getElementById('logout-submit').addEventListener('click', async () => {
+    const btn = document.getElementById('logout-submit');
+    btn.textContent = "Saliendo…";
+    btn.disabled = true;
+    try {
+      await signOut(auth);
+    } catch (e) { /* si falla igual limpiamos localmente */ }
+    localStorage.removeItem(LS_PROFILE);
+    localStorage.removeItem(LS_FOLLOWED);
+    configOverlay.classList.remove('open');
+    document.getElementById('my-code-card').style.display = "none";
+    profileList.innerHTML = "";
+    setupOverlay.classList.add('open');
+    btn.textContent = "Cerrar sesión";
+    btn.disabled = false;
+  });
+
+  // ---------- Comentar (paso 1: solo UI) ----------
+  const commentOverlay = document.getElementById('comment-overlay');
+  let activeCommentPostId = null;
+  let activeCommentAuthorId = null;
+
+  function openCommentModal(postId, authorId) {
+    activeCommentPostId = postId;
+    activeCommentAuthorId = authorId;
+    document.getElementById('comment-text').value = "";
+    document.getElementById('comment-error').classList.remove('show');
+    commentOverlay.classList.add('open');
+  }
+  document.getElementById('comment-close').addEventListener('click', () => commentOverlay.classList.remove('open'));
+  commentOverlay.addEventListener('click', (e) => { if (e.target === commentOverlay) commentOverlay.classList.remove('open'); });
+
+  document.getElementById('comment-submit').addEventListener('click', async () => {
+    const texto = document.getElementById('comment-text').value.trim();
+    const errorEl = document.getElementById('comment-error');
+    errorEl.classList.remove('show');
+    if (!texto) {
+      errorEl.textContent = "Escribe algo antes de enviar.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const btn = document.getElementById('comment-submit');
+    btn.textContent = "Enviando…";
+    btn.disabled = true;
+    try {
+      await createComment(activeCommentPostId, activeCommentAuthorId, texto);
+      commentOverlay.classList.remove('open');
+      const note = document.getElementById(`comment-sent-${activeCommentPostId}`);
+      if (note) {
+        note.classList.add('show');
+        setTimeout(() => note.classList.remove('show'), 2500);
+      }
+    } catch (e) {
+      errorEl.textContent = "No se pudo enviar. Revisa tu conexión e intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Enviar comentario";
+    btn.disabled = false;
+  });
 
   async function init() {
     const mine = getMyProfile();
@@ -969,27 +1506,108 @@
       renderGreeting(mine);
       renderProfileList();
     }
+    refreshBandejaBadge();
   }
+
+  function updateSetupPreview() {
+    const usuario = slugifyUsuario(document.getElementById('setup-username').value) || "usuario";
+    const numero = soloDigitos(document.getElementById('setup-number').value) || "000000";
+    document.getElementById('setup-username-hint').textContent = `Tu código quedará como: ${usuario}${numero}@cafébaúl`;
+  }
+  document.getElementById('setup-username').addEventListener('input', updateSetupPreview);
+  document.getElementById('setup-number').addEventListener('input', (e) => {
+    e.target.value = soloDigitos(e.target.value).slice(0, 6);
+    updateSetupPreview();
+  });
 
   document.getElementById('setup-submit').addEventListener('click', async () => {
     const nombre = document.getElementById('setup-name').value.trim();
+    const usuarioDeseado = document.getElementById('setup-username').value.trim();
+    const numeroDeseado = soloDigitos(document.getElementById('setup-number').value);
+    const password = document.getElementById('setup-password').value;
     const rol = document.getElementById('setup-role').value.trim();
     const errorEl = document.getElementById('setup-error');
-    if (!nombre) { errorEl.classList.add('show'); return; }
+    if (!nombre || !slugifyUsuario(usuarioDeseado)) {
+      errorEl.textContent = "Escribe tu nombre y un nombre de usuario (solo letras y números).";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (numeroDeseado.length !== 6) {
+      errorEl.textContent = "Tu número de Café Baúl debe tener exactamente 6 dígitos.";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (password.length < 6) {
+      errorEl.textContent = "La contraseña debe tener al menos 6 caracteres.";
+      errorEl.classList.add('show');
+      return;
+    }
     errorEl.classList.remove('show');
     const btn = document.getElementById('setup-submit');
     btn.textContent = "Creando…";
     btn.disabled = true;
     try {
-      const profile = await createProfile(nombre, rol);
+      const profile = await createProfile(nombre, rol, usuarioDeseado, numeroDeseado, password);
       setupOverlay.classList.remove('open');
       renderGreeting(profile);
       renderProfileList();
     } catch (e) {
-      errorEl.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+      if (e.code === "usuario_tomado") {
+        errorEl.textContent = "Ese usuario con ese número ya existe. Prueba con otro número.";
+      } else if (e.code === "auth/email-already-in-use") {
+        errorEl.textContent = "Ese usuario con ese número ya existe. Prueba con otro número.";
+      } else if (e.code === "auth/weak-password") {
+        errorEl.textContent = "La contraseña debe tener al menos 6 caracteres.";
+      } else {
+        errorEl.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+      }
       errorEl.classList.add('show');
     }
     btn.textContent = "Crear mi perfil";
+    btn.disabled = false;
+  });
+
+  document.getElementById('goto-login').addEventListener('click', () => {
+    setupOverlay.classList.remove('open');
+    document.getElementById('login-error').classList.remove('show');
+    loginOverlay.classList.add('open');
+  });
+  document.getElementById('goto-setup').addEventListener('click', () => {
+    loginOverlay.classList.remove('open');
+    setupOverlay.classList.add('open');
+  });
+
+  document.getElementById('login-submit').addEventListener('click', async () => {
+    const usuarioDeseado = document.getElementById('login-username').value.trim();
+    const numeroDeseado = soloDigitos(document.getElementById('login-number').value);
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+    if (!slugifyUsuario(usuarioDeseado) || numeroDeseado.length !== 6 || !password) {
+      errorEl.textContent = "Completa usuario, número (6 dígitos) y contraseña.";
+      errorEl.classList.add('show');
+      return;
+    }
+    errorEl.classList.remove('show');
+    const btn = document.getElementById('login-submit');
+    btn.textContent = "Entrando…";
+    btn.disabled = true;
+    try {
+      const profile = await loginProfile(usuarioDeseado, numeroDeseado, password);
+      loginOverlay.classList.remove('open');
+      renderGreeting(profile);
+      renderProfileList();
+      refreshBandejaBadge();
+    } catch (e) {
+      if (e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found") {
+        errorEl.textContent = "Usuario, número o contraseña incorrectos.";
+      } else if (e.code === "perfil_no_encontrado") {
+        errorEl.textContent = "No encontramos un perfil asociado a esta cuenta.";
+      } else {
+        errorEl.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+      }
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Entrar";
     btn.disabled = false;
   });
 
@@ -1002,7 +1620,7 @@
   addOverlay.addEventListener('click', (e) => { if (e.target === addOverlay) closeAdd(); });
 
   document.getElementById('add-submit').addEventListener('click', async () => {
-    const code = document.getElementById('add-code').value.trim().toUpperCase();
+    const code = document.getElementById('add-code').value.trim().toLowerCase();
     const errorEl = document.getElementById('add-error');
     if (!code) return;
     const btn = document.getElementById('add-submit');
@@ -1045,15 +1663,155 @@
 
   // ---------- Publicar ----------
 
+  let selectedGroupId = null;
+  let selectedContentType = 'texto';
+  let selectedPdfFile = null;
+  let selectedAudioFile = null;
+  let selectedVideoFile = null;
+
+  const AUDIO_MAX_SECONDS = 5 * 60;
+  const VIDEO_MAX_SECONDS = 2 * 60;
+  const FILE_MAX_BYTES = 50 * 1024 * 1024;
+
+  function readMediaDuration(file, kind) {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement(kind);
+      el.preload = 'metadata';
+      el.onloadedmetadata = () => { URL.revokeObjectURL(el.src); resolve(el.duration); };
+      el.onerror = () => { URL.revokeObjectURL(el.src); reject(new Error('no_se_pudo_leer')); };
+      el.src = URL.createObjectURL(file);
+    });
+  }
+
+  function switchContentType(type) {
+    selectedContentType = type;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b.dataset.type === type));
+    document.getElementById('publish-pdf-block').style.display = type === 'texto' ? 'block' : 'none';
+    document.getElementById('publish-audio-block').style.display = type === 'audio' ? 'block' : 'none';
+    document.getElementById('publish-video-block').style.display = type === 'video' ? 'block' : 'none';
+    document.getElementById('publish-image-block').style.display = type === 'imagen' ? 'block' : 'none';
+    document.getElementById('publish-text').placeholder = type === 'texto'
+      ? "Escribe tu texto… (o adjunta un PDF si ya lo tienes trabajado)"
+      : "Añade una descripción (opcional)";
+  }
+
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchContentType(btn.dataset.type));
+  });
+
+  document.getElementById('publish-pdf-btn').addEventListener('click', () => document.getElementById('publish-pdf-input').click());
+  document.getElementById('publish-pdf-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const errorEl = document.getElementById('publish-error');
+    errorEl.classList.remove('show');
+    if (!file) return;
+    if (file.size > FILE_MAX_BYTES) {
+      errorEl.textContent = "El PDF pesa más de 50MB.";
+      errorEl.classList.add('show');
+      e.target.value = "";
+      return;
+    }
+    selectedPdfFile = file;
+    document.getElementById('publish-pdf-name').textContent = file.name;
+    document.getElementById('publish-pdf-preview').style.display = 'flex';
+    document.getElementById('publish-pdf-row').style.display = 'none';
+  });
+  document.getElementById('publish-pdf-remove').addEventListener('click', () => {
+    selectedPdfFile = null;
+    document.getElementById('publish-pdf-input').value = "";
+    document.getElementById('publish-pdf-preview').style.display = 'none';
+    document.getElementById('publish-pdf-row').style.display = 'block';
+  });
+
+  document.getElementById('publish-audio-btn').addEventListener('click', () => document.getElementById('publish-audio-input').click());
+  document.getElementById('publish-audio-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    const errorEl = document.getElementById('publish-error');
+    errorEl.classList.remove('show');
+    if (!file) return;
+    if (file.size > FILE_MAX_BYTES) {
+      errorEl.textContent = "El audio pesa más de 50MB.";
+      errorEl.classList.add('show');
+      e.target.value = "";
+      return;
+    }
+    try {
+      const duration = await readMediaDuration(file, 'audio');
+      if (duration > AUDIO_MAX_SECONDS) {
+        errorEl.textContent = "El audio dura más de 5 minutos.";
+        errorEl.classList.add('show');
+        e.target.value = "";
+        return;
+      }
+    } catch {
+      errorEl.textContent = "No se pudo leer el archivo de audio.";
+      errorEl.classList.add('show');
+      e.target.value = "";
+      return;
+    }
+    selectedAudioFile = file;
+    document.getElementById('publish-audio-player').src = URL.createObjectURL(file);
+    document.getElementById('publish-audio-preview').style.display = 'block';
+    document.getElementById('publish-audio-row').style.display = 'none';
+  });
+  document.getElementById('publish-audio-remove').addEventListener('click', () => {
+    selectedAudioFile = null;
+    document.getElementById('publish-audio-input').value = "";
+    document.getElementById('publish-audio-preview').style.display = 'none';
+    document.getElementById('publish-audio-row').style.display = 'block';
+  });
+
+  document.getElementById('publish-video-btn').addEventListener('click', () => document.getElementById('publish-video-input').click());
+  document.getElementById('publish-video-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    const errorEl = document.getElementById('publish-error');
+    errorEl.classList.remove('show');
+    if (!file) return;
+    if (file.size > FILE_MAX_BYTES) {
+      errorEl.textContent = "El video pesa más de 50MB.";
+      errorEl.classList.add('show');
+      e.target.value = "";
+      return;
+    }
+    try {
+      const duration = await readMediaDuration(file, 'video');
+      if (duration > VIDEO_MAX_SECONDS) {
+        errorEl.textContent = "El video dura más de 2 minutos.";
+        errorEl.classList.add('show');
+        e.target.value = "";
+        return;
+      }
+    } catch {
+      errorEl.textContent = "No se pudo leer el archivo de video.";
+      errorEl.classList.add('show');
+      e.target.value = "";
+      return;
+    }
+    selectedVideoFile = file;
+    document.getElementById('publish-video-player').src = URL.createObjectURL(file);
+    document.getElementById('publish-video-preview').style.display = 'block';
+    document.getElementById('publish-video-row').style.display = 'none';
+  });
+  document.getElementById('publish-video-remove').addEventListener('click', () => {
+    selectedVideoFile = null;
+    document.getElementById('publish-video-input').value = "";
+    document.getElementById('publish-video-preview').style.display = 'none';
+    document.getElementById('publish-video-row').style.display = 'block';
+  });
+
   document.querySelectorAll('.mode-option').forEach(opt => {
     opt.addEventListener('click', async () => {
-      if (opt.dataset.mode === 'grupal') return; // llega en la próxima etapa
       document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       selectedMode = opt.dataset.mode;
-      const picker = document.getElementById('selectivo-picker');
+      selectedGroupId = null;
+
+      document.getElementById('selectivo-picker').style.display = 'none';
+      document.getElementById('grupal-picker').style.display = 'none';
+      document.getElementById('new-group-form').style.display = 'none';
+
       if (selectedMode === 'selectivo') {
-        picker.style.display = 'block';
+        document.getElementById('selectivo-picker').style.display = 'block';
         const list = document.getElementById('followers-list');
         list.innerHTML = `<div class="spinner-row">Cargando…</div>`;
         const mine = getMyProfile();
@@ -1067,10 +1825,118 @@
             </label>
           `).join("");
         }
-      } else {
-        picker.style.display = 'none';
+      } else if (selectedMode === 'grupal') {
+        document.getElementById('grupal-picker').style.display = 'block';
+        await loadGroupsPicker();
       }
     });
+  });
+
+  async function loadGroupsPicker() {
+    const mine = getMyProfile();
+    const groupsList = document.getElementById('groups-list');
+    groupsList.innerHTML = `<div class="spinner-row">Cargando grupos…</div>`;
+    const groups = await getMyGroups(mine.id);
+    if (groups.length === 0) {
+      groupsList.innerHTML = `<div class="sheet-hint" style="margin:0;">Aún no tienes grupos. Crea el primero abajo.</div>`;
+      document.getElementById('new-group-form').style.display = 'block';
+      await fillNewGroupMembers();
+    } else {
+      groupsList.innerHTML = groups.map(g => `
+        <div class="mode-option" data-group="${g.id}">
+          <span class="mode-dot"></span>
+          <span><strong>${escapeHtml(g.nombre)}</strong><br><span>${g.miembros.length} persona${g.miembros.length === 1 ? '' : 's'}</span></span>
+        </div>
+      `).join("");
+      groupsList.querySelectorAll('[data-group]').forEach(el => {
+        el.addEventListener('click', () => {
+          groupsList.querySelectorAll('[data-group]').forEach(o => o.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedGroupId = el.dataset.group;
+        });
+      });
+    }
+  }
+
+  async function fillNewGroupMembers() {
+    const mine = getMyProfile();
+    const container = document.getElementById('new-group-members');
+    container.innerHTML = `<div class="spinner-row">Cargando…</div>`;
+    const followers = await getMyFollowers(mine.id);
+    if (followers.length === 0) {
+      container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
+    } else {
+      container.innerHTML = followers.map(f => `
+        <label class="follower-check">
+          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
+        </label>
+      `).join("");
+    }
+  }
+
+  document.getElementById('new-group-toggle').addEventListener('click', async () => {
+    const form = document.getElementById('new-group-form');
+    const willShow = form.style.display === 'none';
+    form.style.display = willShow ? 'block' : 'none';
+    if (willShow) await fillNewGroupMembers();
+  });
+
+  document.getElementById('new-group-save').addEventListener('click', async () => {
+    const nombre = document.getElementById('new-group-name').value.trim();
+    const errorEl = document.getElementById('publish-error');
+    errorEl.classList.remove('show');
+    if (!nombre) {
+      errorEl.textContent = "Ponle un nombre al grupo.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const miembros = Array.from(document.querySelectorAll('#new-group-members input:checked')).map(i => i.value);
+    if (miembros.length === 0) {
+      errorEl.textContent = "Elige al menos una persona para el grupo.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const btn = document.getElementById('new-group-save');
+    btn.textContent = "Guardando…";
+    btn.disabled = true;
+    try {
+      const mine = getMyProfile();
+      const group = await createGroup(mine.id, nombre, miembros);
+      document.getElementById('new-group-name').value = "";
+      document.getElementById('new-group-form').style.display = 'none';
+      await loadGroupsPicker();
+      const created = document.querySelector(`[data-group="${group.id}"]`);
+      if (created) {
+        document.querySelectorAll('#groups-list [data-group]').forEach(o => o.classList.remove('selected'));
+        created.classList.add('selected');
+        selectedGroupId = group.id;
+      }
+    } catch (e) {
+      errorEl.textContent = "No se pudo crear el grupo. Intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Guardar grupo";
+    btn.disabled = false;
+  });
+
+  let selectedPhotoFile = null;
+
+  document.getElementById('publish-photo-btn').addEventListener('click', () => {
+    document.getElementById('publish-photo-input').click();
+  });
+  document.getElementById('publish-photo-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedPhotoFile = file;
+    document.getElementById('publish-photo-img').src = URL.createObjectURL(file);
+    document.getElementById('publish-photo-preview').style.display = 'block';
+    document.getElementById('publish-photo-row').style.display = 'none';
+  });
+  document.getElementById('publish-photo-remove').addEventListener('click', () => {
+    selectedPhotoFile = null;
+    document.getElementById('publish-photo-input').value = "";
+    document.getElementById('publish-photo-preview').style.display = 'none';
+    document.getElementById('publish-photo-row').style.display = 'block';
   });
 
   document.getElementById('publish-submit').addEventListener('click', async () => {
@@ -1078,12 +1944,28 @@
     const errorEl = document.getElementById('publish-error');
     errorEl.classList.remove('show');
 
-    if (!texto) {
-      errorEl.textContent = "Escribe algo antes de publicar.";
+    if (selectedContentType === 'texto' && !texto && !selectedPdfFile) {
+      errorEl.textContent = "Escribe algo o adjunta un PDF antes de publicar.";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (selectedContentType === 'audio' && !selectedAudioFile) {
+      errorEl.textContent = "Adjunta un audio antes de publicar.";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (selectedContentType === 'video' && !selectedVideoFile) {
+      errorEl.textContent = "Adjunta un video antes de publicar.";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (selectedContentType === 'imagen' && !selectedPhotoFile) {
+      errorEl.textContent = "Adjunta una foto antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
     let autorizados = [];
+    let grupoNombre = null;
     if (selectedMode === 'selectivo') {
       autorizados = Array.from(document.querySelectorAll('#followers-list input:checked')).map(i => i.value);
       if (autorizados.length === 0) {
@@ -1091,13 +1973,54 @@
         errorEl.classList.add('show');
         return;
       }
+    } else if (selectedMode === 'grupal') {
+      if (!selectedGroupId) {
+        errorEl.textContent = "Elige o crea un grupo para publicar ahí.";
+        errorEl.classList.add('show');
+        return;
+      }
+      const mine = getMyProfile();
+      const groups = await getMyGroups(mine.id);
+      const group = groups.find(g => g.id === selectedGroupId);
+      if (!group) {
+        errorEl.textContent = "Ese grupo ya no existe. Elige otro.";
+        errorEl.classList.add('show');
+        return;
+      }
+      autorizados = group.miembros;
+      grupoNombre = group.nombre;
     }
     const btn = document.getElementById('publish-submit');
-    btn.textContent = "Publicando…";
     btn.disabled = true;
     try {
-      await createPost(texto, selectedMode, autorizados);
+      const mine = getMyProfile();
+      const urls = {};
+      if (selectedContentType === 'imagen' && selectedPhotoFile) {
+        btn.textContent = "Comprimiendo foto…";
+        const blob = await compressImage(selectedPhotoFile);
+        btn.textContent = "Subiendo foto…";
+        urls.imagenUrl = await uploadPostImage(blob, mine.id);
+      }
+      if (selectedContentType === 'texto' && selectedPdfFile) {
+        btn.textContent = "Subiendo PDF…";
+        urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf');
+      }
+      if (selectedContentType === 'audio' && selectedAudioFile) {
+        btn.textContent = "Subiendo audio…";
+        urls.audioUrl = await uploadPostFile(selectedAudioFile, mine.id, 'audio');
+      }
+      if (selectedContentType === 'video' && selectedVideoFile) {
+        btn.textContent = "Subiendo video…";
+        urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video');
+      }
+      btn.textContent = "Publicando…";
+      await createPost(selectedContentType, texto, selectedMode, autorizados, grupoNombre, urls);
       document.getElementById('publish-text').value = "";
+      document.getElementById('publish-photo-remove').click();
+      document.getElementById('publish-pdf-remove').click();
+      document.getElementById('publish-audio-remove').click();
+      document.getElementById('publish-video-remove').click();
+      switchContentType('texto');
       publishOverlay.classList.remove('open');
       renderProfileList();
     } catch (e) {
