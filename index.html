@@ -1004,12 +1004,12 @@
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
   } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
   import {
-    getStorage, ref, uploadBytes, getDownloadURL
-  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
-  import {
     getFirestore, collection, doc, setDoc, addDoc, getDoc, getDocs,
     query, where, serverTimestamp, updateDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+  const CLOUDINARY_CLOUD_NAME = "jsbwm9ht";
+  const CLOUDINARY_UPLOAD_PRESET = "s1tow5gn";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBvohThmYivQAwYV-J_y9E7XRAAlQo5SnU",
@@ -1023,10 +1023,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
-  const storage = getStorage(app);
   const perfilesRef = collection(db, "perfiles");
   const publicacionesRef = collection(db, "publicaciones");
   const comentariosRef = collection(db, "comentarios");
+
 
   const LS_PROFILE = "cafeBaulMiPerfil";
   const LS_FOLLOWED = "cafeBaulSeguidos";
@@ -1181,19 +1181,40 @@
     });
   }
 
-  async function uploadPostImage(blob, autorId) {
-    const path = `publicaciones/${autorId}/${Date.now()}.jpg`;
-    const fileRef = ref(storage, path);
-    await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
-    return await getDownloadURL(fileRef);
+  function uploadToCloudinary(file, folder, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`);
+      xhr.upload.onprogress = (e) => {
+        if (onProgress && e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        let res;
+        try { res = JSON.parse(xhr.responseText); } catch { res = null; }
+        if (xhr.status >= 200 && xhr.status < 300 && res && res.secure_url) {
+          resolve(res.secure_url);
+        } else {
+          reject(new Error((res && res.error && res.error.message) || 'upload_failed'));
+        }
+      };
+      xhr.onerror = () => reject(new Error('network_error'));
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', folder);
+      xhr.send(formData);
+    });
   }
 
-  async function uploadPostFile(file, autorId, subfolder) {
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-    const path = `publicaciones/${autorId}/${subfolder}/${Date.now()}.${ext}`;
-    const fileRef = ref(storage, path);
-    await uploadBytes(fileRef, file, { contentType: file.type || 'application/octet-stream' });
-    return await getDownloadURL(fileRef);
+  async function uploadPostImage(blob, autorId, onProgress) {
+    const file = new File([blob], `${Date.now()}.jpg`, { type: 'image/jpeg' });
+    return await uploadToCloudinary(file, `publicaciones/${autorId}`, onProgress);
+  }
+
+  async function uploadPostFile(file, autorId, subfolder, onProgress) {
+    return await uploadToCloudinary(file, `publicaciones/${autorId}/${subfolder}`, onProgress);
   }
 
   async function createPost(tipo, texto, modo, autorizados, grupoNombre, urls) {
@@ -2004,23 +2025,20 @@
     try {
       const mine = getMyProfile();
       const urls = {};
+      const onProgress = (label) => (pct) => { btn.textContent = `${label}… ${pct}%`; };
       if (selectedContentType === 'imagen' && selectedPhotoFile) {
         btn.textContent = "Comprimiendo foto…";
         const blob = await compressImage(selectedPhotoFile);
-        btn.textContent = "Subiendo foto…";
-        urls.imagenUrl = await uploadPostImage(blob, mine.id);
+        urls.imagenUrl = await uploadPostImage(blob, mine.id, onProgress("Subiendo foto"));
       }
       if (selectedContentType === 'texto' && selectedPdfFile) {
-        btn.textContent = "Subiendo PDF…";
-        urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf');
+        urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf', onProgress("Subiendo PDF"));
       }
       if (selectedContentType === 'audio' && selectedAudioFile) {
-        btn.textContent = "Subiendo audio…";
-        urls.audioUrl = await uploadPostFile(selectedAudioFile, mine.id, 'audio');
+        urls.audioUrl = await uploadPostFile(selectedAudioFile, mine.id, 'audio', onProgress("Subiendo audio"));
       }
       if (selectedContentType === 'video' && selectedVideoFile) {
-        btn.textContent = "Subiendo video…";
-        urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video');
+        urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video', onProgress("Subiendo video"));
       }
       btn.textContent = "Publicando…";
       await createPost(selectedContentType, texto, selectedMode, autorizados, grupoNombre, urls);
