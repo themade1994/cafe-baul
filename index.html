@@ -483,6 +483,7 @@
     border: 1px solid var(--ink-faint); flex-shrink: 0;
   }
   .mode-option.selected .mode-dot { background: var(--brass-bright); border-color: var(--brass-bright); }
+  .mode-dot.checkbox { border-radius: 4px; }
   .mode-option strong { display: block; font-size: 0.88rem; font-weight: 600; }
   .mode-option span { font-size: 0.78rem; color: var(--ink-faint); }
 
@@ -852,6 +853,14 @@
         Bandeja
         <span class="badge-count" id="bandeja-badge-desktop"></span>
       </a>
+      <a class="nav-link" href="#" id="nav-grupos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="9" r="2.6"/><circle cx="16" cy="9" r="2.6"/><path d="M3 19c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8M11 19c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8"/></svg>
+        Grupos
+      </a>
+      <a class="nav-link" href="#" id="nav-carpetas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8a1 1 0 0 1 1-1h4.5l1.5 1.8H20a1 1 0 0 1 1 1V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8z"/></svg>
+        Carpetas
+      </a>
       <a class="nav-link" href="#" id="nav-config">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.4-2-3.4-2.3.9a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.6a8 8 0 0 0-2.6 1.5l-2.3-.9-2 3.4 2 1.4a7.9 7.9 0 0 0 0 3l-2 1.4 2 3.4 2.3-.9a8 8 0 0 0 2.6 1.5l.5 2.6h4l.5-2.6a8 8 0 0 0 2.6-1.5l2.3.9 2-3.4-2-1.4z"/></svg>
         Configuración
@@ -1046,6 +1055,10 @@
     </div>
     <div id="selectivo-picker" style="display:none; margin-bottom:16px;">
       <div class="field-label">¿Quién puede verlo?</div>
+      <select class="sheet-input follower-search-input" id="followers-folder-filter" style="margin-bottom:8px; display:none;">
+        <option value="">Todas las carpetas</option>
+      </select>
+      <input class="sheet-input follower-search-input" id="followers-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
       <div id="followers-list" style="display:flex; flex-direction:column; gap:8px; max-height:180px; overflow-y:auto;"></div>
     </div>
     <div id="grupal-picker" style="display:none; margin-bottom:16px;">
@@ -1056,6 +1069,10 @@
         <label class="field-label" for="new-group-name">Nombre del grupo</label>
         <input class="sheet-input" id="new-group-name" type="text" placeholder="Ej: Amigos, Familia, Espacio creativo" maxlength="30">
         <div class="field-label">¿Quién forma parte?</div>
+        <select class="sheet-input follower-search-input" id="new-group-folder-filter" style="margin-bottom:8px; display:none;">
+          <option value="">Todas las carpetas</option>
+        </select>
+        <input class="sheet-input follower-search-input" id="new-group-members-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
         <div id="new-group-members" style="display:flex; flex-direction:column; gap:8px; max-height:150px; overflow-y:auto; margin-bottom:14px;"></div>
         <button type="button" class="copy-btn" id="new-group-save" style="width:100%;">Guardar grupo</button>
       </div>
@@ -1124,6 +1141,57 @@
       </button>
     </div>
     <div id="bandeja-body" style="max-height:60vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- Grupos (gestión independiente, fuera del flujo de publicar) -->
+<div class="sheet-overlay" id="groups-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Grupos</h3>
+      <button class="sheet-close" id="groups-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Crea y organiza tus grupos aquí. Al publicar, solo elegirás a cuáles va dirigido cada contenido.</p>
+    <div id="groups-manager-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
+    <button type="button" class="copy-btn" id="sidebar-new-group-toggle" style="width:100%;">+ Crear un grupo nuevo</button>
+    <div id="sidebar-new-group-form" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+      <label class="field-label" for="sidebar-new-group-name">Nombre del grupo</label>
+      <input class="sheet-input" id="sidebar-new-group-name" type="text" placeholder="Ej: Amigos, Familia, Espacio creativo" maxlength="30">
+      <div class="field-label">¿Quién forma parte?</div>
+      <select class="sheet-input follower-search-input" id="sidebar-new-group-folder-filter" style="margin-bottom:8px; display:none;">
+        <option value="">Todas las carpetas</option>
+      </select>
+      <input class="sheet-input follower-search-input" id="sidebar-new-group-members-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
+      <div id="sidebar-new-group-members" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+      <div class="sheet-error" id="sidebar-new-group-error"></div>
+      <button type="button" class="sheet-submit" id="sidebar-new-group-save">Guardar grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Carpetas (organizar tus seguidores para encontrarlos rápido) -->
+<div class="sheet-overlay" id="carpetas-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Carpetas</h3>
+      <button class="sheet-close" id="carpetas-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Organiza a quienes te siguen en carpetas (familia, amigos…) para encontrarlos rápido cuando armes un grupo.</p>
+    <div id="carpetas-manager-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
+    <button type="button" class="copy-btn" id="sidebar-new-carpeta-toggle" style="width:100%;">+ Crear una carpeta nueva</button>
+    <div id="sidebar-new-carpeta-form" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+      <label class="field-label" for="sidebar-new-carpeta-name">Nombre de la carpeta</label>
+      <input class="sheet-input" id="sidebar-new-carpeta-name" type="text" placeholder="Ej: Familia, Amigos, Trabajo" maxlength="30">
+      <div class="field-label">¿A quién agrupa?</div>
+      <input class="sheet-input follower-search-input" id="sidebar-new-carpeta-members-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
+      <div id="sidebar-new-carpeta-members" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+      <div class="sheet-error" id="sidebar-new-carpeta-error"></div>
+      <button type="button" class="sheet-submit" id="sidebar-new-carpeta-save">Guardar carpeta</button>
+    </div>
   </div>
 </div>
 
@@ -1348,6 +1416,49 @@
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
+  // Filtra en vivo una lista de seguidores (.follower-check) por texto y, opcionalmente, por carpeta.
+  // Reutilizable en cualquier lugar donde se elija entre tus seguidores (selectivo, crear grupo, etc.).
+  function wireFollowerFilters(inputEl, listEl, folderSelectEl = null, carpetas = []) {
+    if (!inputEl || !listEl) return;
+    inputEl.value = "";
+    if (folderSelectEl) {
+      folderSelectEl.innerHTML = `<option value="">Todas las carpetas</option>` +
+        carpetas.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)} (${c.miembros.length})</option>`).join("");
+      folderSelectEl.value = "";
+      folderSelectEl.style.display = carpetas.length ? 'block' : 'none';
+    }
+    let noMatchEl = listEl.nextElementSibling;
+    if (!noMatchEl || !noMatchEl.classList.contains('search-no-match')) {
+      noMatchEl = document.createElement('div');
+      noMatchEl.className = 'sheet-hint search-no-match';
+      noMatchEl.style.cssText = 'margin:8px 0 0; display:none;';
+      listEl.insertAdjacentElement('afterend', noMatchEl);
+    }
+    const carpetasById = {};
+    carpetas.forEach(c => { carpetasById[c.id] = c; });
+    const apply = () => {
+      const term = inputEl.value.trim().toLowerCase();
+      const folderId = folderSelectEl ? folderSelectEl.value : "";
+      const folderMembers = folderId ? carpetasById[folderId]?.miembros || [] : null;
+      let visible = 0;
+      listEl.querySelectorAll('.follower-check').forEach(label => {
+        const textMatch = !term || label.textContent.toLowerCase().includes(term);
+        const input = label.querySelector('input');
+        const folderMatch = !folderMembers || folderMembers.includes(input.value);
+        const match = textMatch && folderMatch;
+        label.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      noMatchEl.textContent = folderId
+        ? "Nadie en esa carpeta coincide con la búsqueda."
+        : "Sin resultados para esa búsqueda.";
+      noMatchEl.style.display = (visible === 0 && (term || folderId)) ? 'block' : 'none';
+    };
+    inputEl.oninput = apply;
+    if (folderSelectEl) folderSelectEl.onchange = apply;
+    apply();
+  }
+
   function gruposRef(myId) {
     return collection(db, "perfiles", myId, "grupos");
   }
@@ -1360,6 +1471,21 @@
 
   async function getMyGroups(myId) {
     const snap = await getDocs(gruposRef(myId));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  function carpetasRef(myId) {
+    return collection(db, "perfiles", myId, "carpetas");
+  }
+
+  async function createCarpeta(myId, nombre, miembros) {
+    const newDoc = doc(carpetasRef(myId));
+    await setDoc(newDoc, { nombre: nombre.trim(), miembros, creado: serverTimestamp() });
+    return { id: newDoc.id, nombre: nombre.trim(), miembros };
+  }
+
+  async function getMyCarpetas(myId) {
+    const snap = await getDocs(carpetasRef(myId));
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
@@ -2234,7 +2360,7 @@
 
   // ---------- Publicar ----------
 
-  let selectedGroupId = null;
+  let selectedGroupIds = new Set();
   let selectedContentType = 'texto';
   let selectedPdfFile = null;
   let selectedAudioFile = null;
@@ -2375,7 +2501,7 @@
       document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       selectedMode = opt.dataset.mode;
-      selectedGroupId = null;
+      selectedGroupIds = new Set();
 
       document.getElementById('selectivo-picker').style.display = 'none';
       document.getElementById('grupal-picker').style.display = 'none';
@@ -2384,6 +2510,10 @@
       if (selectedMode === 'selectivo') {
         document.getElementById('selectivo-picker').style.display = 'block';
         const list = document.getElementById('followers-list');
+        const searchInput = document.getElementById('followers-search');
+        const folderFilter = document.getElementById('followers-folder-filter');
+        searchInput.style.display = 'none';
+        folderFilter.style.display = 'none';
         list.innerHTML = `<div class="spinner-row">Cargando…</div>`;
         const mine = getMyProfile();
         const followers = await getMyFollowers(mine.id);
@@ -2395,6 +2525,11 @@
               <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
             </label>
           `).join("");
+          if (followers.length > 6) {
+            searchInput.style.display = 'block';
+            const carpetas = await getMyCarpetas(mine.id);
+            wireFollowerFilters(searchInput, list, folderFilter, carpetas);
+          }
         }
       } else if (selectedMode === 'grupal') {
         document.getElementById('grupal-picker').style.display = 'block';
@@ -2413,17 +2548,22 @@
       document.getElementById('new-group-form').style.display = 'block';
       await fillNewGroupMembers();
     } else {
-      groupsList.innerHTML = groups.map(g => `
-        <div class="mode-option" data-group="${g.id}">
-          <span class="mode-dot"></span>
+      groupsList.innerHTML = `<div class="sheet-hint" style="margin:0 0 10px;">Puedes elegir uno o varios grupos.</div>` + groups.map(g => `
+        <div class="mode-option ${selectedGroupIds.has(g.id) ? 'selected' : ''}" data-group="${g.id}">
+          <span class="mode-dot checkbox"></span>
           <span><strong>${escapeHtml(g.nombre)}</strong><br><span>${g.miembros.length} persona${g.miembros.length === 1 ? '' : 's'}</span></span>
         </div>
       `).join("");
       groupsList.querySelectorAll('[data-group]').forEach(el => {
         el.addEventListener('click', () => {
-          groupsList.querySelectorAll('[data-group]').forEach(o => o.classList.remove('selected'));
-          el.classList.add('selected');
-          selectedGroupId = el.dataset.group;
+          const gid = el.dataset.group;
+          if (selectedGroupIds.has(gid)) {
+            selectedGroupIds.delete(gid);
+            el.classList.remove('selected');
+          } else {
+            selectedGroupIds.add(gid);
+            el.classList.add('selected');
+          }
         });
       });
     }
@@ -2432,6 +2572,10 @@
   async function fillNewGroupMembers() {
     const mine = getMyProfile();
     const container = document.getElementById('new-group-members');
+    const searchInput = document.getElementById('new-group-members-search');
+    const folderFilter = document.getElementById('new-group-folder-filter');
+    searchInput.style.display = 'none';
+    folderFilter.style.display = 'none';
     container.innerHTML = `<div class="spinner-row">Cargando…</div>`;
     const followers = await getMyFollowers(mine.id);
     if (followers.length === 0) {
@@ -2442,6 +2586,11 @@
           <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
         </label>
       `).join("");
+      if (followers.length > 6) {
+        searchInput.style.display = 'block';
+        const carpetas = await getMyCarpetas(mine.id);
+        wireFollowerFilters(searchInput, container, folderFilter, carpetas);
+      }
     }
   }
 
@@ -2450,6 +2599,197 @@
     const willShow = form.style.display === 'none';
     form.style.display = willShow ? 'block' : 'none';
     if (willShow) await fillNewGroupMembers();
+  });
+
+  // ---------- Grupos (gestión independiente desde el menú lateral) ----------
+  const groupsOverlay = document.getElementById('groups-overlay');
+
+  async function loadGroupsManagerList() {
+    const mine = getMyProfile();
+    const list = document.getElementById('groups-manager-list');
+    list.innerHTML = `<div class="spinner-row">Cargando grupos…</div>`;
+    const groups = await getMyGroups(mine.id);
+    if (groups.length === 0) {
+      list.innerHTML = `<div class="sheet-hint" style="margin:0;">Aún no tienes grupos. Crea el primero abajo.</div>`;
+      document.getElementById('sidebar-new-group-form').style.display = 'block';
+      await fillSidebarGroupMembers();
+    } else {
+      list.innerHTML = groups.map(g => `
+        <div class="mode-option" style="cursor:default;">
+          <span class="mode-dot" style="visibility:hidden;"></span>
+          <span><strong>${escapeHtml(g.nombre)}</strong><br><span>${g.miembros.length} persona${g.miembros.length === 1 ? '' : 's'}</span></span>
+        </div>
+      `).join("");
+    }
+  }
+
+  async function fillSidebarGroupMembers() {
+    const mine = getMyProfile();
+    const container = document.getElementById('sidebar-new-group-members');
+    const searchInput = document.getElementById('sidebar-new-group-members-search');
+    const folderFilter = document.getElementById('sidebar-new-group-folder-filter');
+    searchInput.style.display = 'none';
+    folderFilter.style.display = 'none';
+    container.innerHTML = `<div class="spinner-row">Cargando…</div>`;
+    const followers = await getMyFollowers(mine.id);
+    if (followers.length === 0) {
+      container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
+    } else {
+      container.innerHTML = followers.map(f => `
+        <label class="follower-check">
+          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
+        </label>
+      `).join("");
+      if (followers.length > 6) {
+        searchInput.style.display = 'block';
+        const carpetas = await getMyCarpetas(mine.id);
+        wireFollowerFilters(searchInput, container, folderFilter, carpetas);
+      }
+    }
+  }
+
+  function openGroupsManager() {
+    document.getElementById('sidebar-new-group-form').style.display = 'none';
+    document.getElementById('sidebar-new-group-name').value = "";
+    document.getElementById('sidebar-new-group-error').classList.remove('show');
+    groupsOverlay.classList.add('open');
+    loadGroupsManagerList();
+  }
+  document.getElementById('nav-grupos').addEventListener('click', (e) => { e.preventDefault(); openGroupsManager(); });
+  document.getElementById('groups-close').addEventListener('click', () => groupsOverlay.classList.remove('open'));
+  groupsOverlay.addEventListener('click', (e) => { if (e.target === groupsOverlay) groupsOverlay.classList.remove('open'); });
+
+  document.getElementById('sidebar-new-group-toggle').addEventListener('click', async () => {
+    const form = document.getElementById('sidebar-new-group-form');
+    const willShow = form.style.display === 'none';
+    form.style.display = willShow ? 'block' : 'none';
+    if (willShow) await fillSidebarGroupMembers();
+  });
+
+  document.getElementById('sidebar-new-group-save').addEventListener('click', async () => {
+    const nombre = document.getElementById('sidebar-new-group-name').value.trim();
+    const errorEl = document.getElementById('sidebar-new-group-error');
+    errorEl.classList.remove('show');
+    if (!nombre) {
+      errorEl.textContent = "Ponle un nombre al grupo.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const miembros = Array.from(document.querySelectorAll('#sidebar-new-group-members input:checked')).map(i => i.value);
+    if (miembros.length === 0) {
+      errorEl.textContent = "Elige al menos una persona para el grupo.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const btn = document.getElementById('sidebar-new-group-save');
+    btn.textContent = "Guardando…";
+    btn.disabled = true;
+    try {
+      const mine = getMyProfile();
+      await createGroup(mine.id, nombre, miembros);
+      document.getElementById('sidebar-new-group-name').value = "";
+      document.getElementById('sidebar-new-group-form').style.display = 'none';
+      await loadGroupsManagerList();
+    } catch (e) {
+      errorEl.textContent = "No se pudo crear el grupo. Intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Guardar grupo";
+    btn.disabled = false;
+  });
+
+  // ---------- Carpetas (organizar seguidores, desde el menú lateral) ----------
+  const carpetasOverlay = document.getElementById('carpetas-overlay');
+
+  async function loadCarpetasManagerList() {
+    const mine = getMyProfile();
+    const list = document.getElementById('carpetas-manager-list');
+    list.innerHTML = `<div class="spinner-row">Cargando carpetas…</div>`;
+    const carpetas = await getMyCarpetas(mine.id);
+    if (carpetas.length === 0) {
+      list.innerHTML = `<div class="sheet-hint" style="margin:0;">Aún no tienes carpetas. Crea la primera abajo.</div>`;
+      document.getElementById('sidebar-new-carpeta-form').style.display = 'block';
+      await fillSidebarCarpetaMembers();
+    } else {
+      list.innerHTML = carpetas.map(c => `
+        <div class="mode-option" style="cursor:default;">
+          <span class="mode-dot" style="visibility:hidden;"></span>
+          <span><strong>${escapeHtml(c.nombre)}</strong><br><span>${c.miembros.length} persona${c.miembros.length === 1 ? '' : 's'}</span></span>
+        </div>
+      `).join("");
+    }
+  }
+
+  async function fillSidebarCarpetaMembers() {
+    const mine = getMyProfile();
+    const container = document.getElementById('sidebar-new-carpeta-members');
+    const searchInput = document.getElementById('sidebar-new-carpeta-members-search');
+    searchInput.style.display = 'none';
+    container.innerHTML = `<div class="spinner-row">Cargando…</div>`;
+    const followers = await getMyFollowers(mine.id);
+    if (followers.length === 0) {
+      container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a una carpeta.</div>`;
+    } else {
+      container.innerHTML = followers.map(f => `
+        <label class="follower-check">
+          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
+        </label>
+      `).join("");
+      if (followers.length > 6) {
+        searchInput.style.display = 'block';
+        wireFollowerFilters(searchInput, container);
+      }
+    }
+  }
+
+  function openCarpetasManager() {
+    document.getElementById('sidebar-new-carpeta-form').style.display = 'none';
+    document.getElementById('sidebar-new-carpeta-name').value = "";
+    document.getElementById('sidebar-new-carpeta-error').classList.remove('show');
+    carpetasOverlay.classList.add('open');
+    loadCarpetasManagerList();
+  }
+  document.getElementById('nav-carpetas').addEventListener('click', (e) => { e.preventDefault(); openCarpetasManager(); });
+  document.getElementById('carpetas-close').addEventListener('click', () => carpetasOverlay.classList.remove('open'));
+  carpetasOverlay.addEventListener('click', (e) => { if (e.target === carpetasOverlay) carpetasOverlay.classList.remove('open'); });
+
+  document.getElementById('sidebar-new-carpeta-toggle').addEventListener('click', async () => {
+    const form = document.getElementById('sidebar-new-carpeta-form');
+    const willShow = form.style.display === 'none';
+    form.style.display = willShow ? 'block' : 'none';
+    if (willShow) await fillSidebarCarpetaMembers();
+  });
+
+  document.getElementById('sidebar-new-carpeta-save').addEventListener('click', async () => {
+    const nombre = document.getElementById('sidebar-new-carpeta-name').value.trim();
+    const errorEl = document.getElementById('sidebar-new-carpeta-error');
+    errorEl.classList.remove('show');
+    if (!nombre) {
+      errorEl.textContent = "Ponle un nombre a la carpeta.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const miembros = Array.from(document.querySelectorAll('#sidebar-new-carpeta-members input:checked')).map(i => i.value);
+    if (miembros.length === 0) {
+      errorEl.textContent = "Elige al menos una persona para la carpeta.";
+      errorEl.classList.add('show');
+      return;
+    }
+    const btn = document.getElementById('sidebar-new-carpeta-save');
+    btn.textContent = "Guardando…";
+    btn.disabled = true;
+    try {
+      const mine = getMyProfile();
+      await createCarpeta(mine.id, nombre, miembros);
+      document.getElementById('sidebar-new-carpeta-name').value = "";
+      document.getElementById('sidebar-new-carpeta-form').style.display = 'none';
+      await loadCarpetasManagerList();
+    } catch (e) {
+      errorEl.textContent = "No se pudo crear la carpeta. Intenta de nuevo.";
+      errorEl.classList.add('show');
+    }
+    btn.textContent = "Guardar carpeta";
+    btn.disabled = false;
   });
 
   document.getElementById('new-group-save').addEventListener('click', async () => {
@@ -2475,13 +2815,8 @@
       const group = await createGroup(mine.id, nombre, miembros);
       document.getElementById('new-group-name').value = "";
       document.getElementById('new-group-form').style.display = 'none';
+      selectedGroupIds.add(group.id);
       await loadGroupsPicker();
-      const created = document.querySelector(`[data-group="${group.id}"]`);
-      if (created) {
-        document.querySelectorAll('#groups-list [data-group]').forEach(o => o.classList.remove('selected'));
-        created.classList.add('selected');
-        selectedGroupId = group.id;
-      }
     } catch (e) {
       errorEl.textContent = "No se pudo crear el grupo. Intenta de nuevo.";
       errorEl.classList.add('show');
@@ -2545,21 +2880,23 @@
         return;
       }
     } else if (selectedMode === 'grupal') {
-      if (!selectedGroupId) {
-        errorEl.textContent = "Elige o crea un grupo para publicar ahí.";
+      if (selectedGroupIds.size === 0) {
+        errorEl.textContent = "Elige al menos un grupo, o crea uno nuevo.";
         errorEl.classList.add('show');
         return;
       }
       const mine = getMyProfile();
       const groups = await getMyGroups(mine.id);
-      const group = groups.find(g => g.id === selectedGroupId);
-      if (!group) {
-        errorEl.textContent = "Ese grupo ya no existe. Elige otro.";
+      const chosen = groups.filter(g => selectedGroupIds.has(g.id));
+      if (chosen.length === 0) {
+        errorEl.textContent = "Esos grupos ya no existen. Elige otros.";
         errorEl.classList.add('show');
         return;
       }
-      autorizados = group.miembros;
-      grupoNombre = group.nombre;
+      const memberSet = new Set();
+      chosen.forEach(g => g.miembros.forEach(m => memberSet.add(m)));
+      autorizados = Array.from(memberSet);
+      grupoNombre = chosen.map(g => g.nombre).join(', ');
     }
     const btn = document.getElementById('publish-submit');
     btn.disabled = true;
@@ -2589,6 +2926,7 @@
       document.getElementById('publish-audio-remove').click();
       document.getElementById('publish-video-remove').click();
       switchContentType('texto');
+      selectedGroupIds = new Set();
       publishOverlay.classList.remove('open');
       await renderProfileList();
       await renderOwnFeed();
