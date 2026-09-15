@@ -988,10 +988,9 @@
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav">
-  <a class="active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>Inicio</a>
+  <a class="active" href="#" id="mnav-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>Inicio</a>
   <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Perfiles</a>
-  <a href="#" id="mnav-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>Añadir</a>
-  <a href="#" id="mnav-publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l3-9 12-6-6 12-9 3z"/></svg>Publicar</a>
+  <a href="#" id="mnav-carpetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Carpetas</a>
   <a href="#" id="mnav-bandeja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja<span class="badge-count" id="bandeja-badge-mobile"></span></a>
 </nav>
 
@@ -1253,6 +1252,8 @@
         <div class="code" id="config-code-value">------</div>
       </div>
     </div>
+    <button type="button" class="copy-btn" id="config-open-grupos" style="width:100%; margin-bottom:10px;">Tus grupos</button>
+    <button type="button" class="copy-btn" id="config-open-carpetas" style="width:100%; margin-bottom:24px;">Tus carpetas</button>
     <button class="sheet-submit" id="logout-submit" style="background:var(--ember);">Cerrar sesión</button>
     <div class="sheet-hint" style="margin-top:12px;">Al cerrar sesión, este dispositivo olvida tu perfil y tu lista de seguidos. Para volver a entrar necesitarás tu usuario, número y contraseña.</div>
   </div>
@@ -1295,7 +1296,6 @@
   const close = () => overlay.classList.remove('open');
 
   document.getElementById('btn-publish').addEventListener('click', open);
-  document.getElementById('mnav-publish').addEventListener('click', (e) => { e.preventDefault(); open(); });
   document.getElementById('sheet-close').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 </script>
@@ -1428,7 +1428,7 @@
       throw err;
     }
     const data = snap.data();
-    const profile = { id: cred.user.uid, nombre: data.nombre, rol: data.rol, usuario: data.usuario, codigo: data.codigo };
+    const profile = { id: cred.user.uid, ...data };
     localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
     return profile;
   }
@@ -1452,6 +1452,16 @@
   async function getMyFollowers(myId) {
     const snap = await getDocs(collection(db, "perfiles", myId, "seguidores"));
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  async function registerAsFollowed(myId, creatorId) {
+    // Guarda en Firestore a quién sigo, para que sobreviva a un cierre de sesión o cambio de dispositivo.
+    await setDoc(doc(db, "perfiles", myId, "siguiendo", creatorId), { desde: serverTimestamp() });
+  }
+
+  async function getMyFollowedIds(myId) {
+    const snap = await getDocs(collection(db, "perfiles", myId, "siguiendo"));
+    return snap.docs.map(d => d.id);
   }
 
   // Filtra en vivo una lista de seguidores (.follower-check) por texto y, opcionalmente, por carpeta.
@@ -2074,6 +2084,13 @@
     profileList.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
+  document.getElementById('mnav-inicio').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.sheet-overlay.open').forEach(o => o.classList.remove('open'));
+    setActiveNav(navInicio);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   document.getElementById('bandeja-close').addEventListener('click', () => bandejaOverlay.classList.remove('open'));
   bandejaOverlay.addEventListener('click', (e) => { if (e.target === bandejaOverlay) bandejaOverlay.classList.remove('open'); });
 
@@ -2115,7 +2132,14 @@
   }
 
   async function renderProfileList() {
-    const followed = getFollowed();
+    const mineForSync = getMyProfile();
+    let followed;
+    try {
+      followed = await getMyFollowedIds(mineForSync.id);
+      saveFollowed(followed); // refresca la caché local por si acaso se pierde la conexión más tarde
+    } catch (e) {
+      followed = getFollowed(); // sin conexión: usamos la última copia local conocida
+    }
     latestFollowedRows = [];
     if (followed.length === 0) {
       profileList.innerHTML = `<div class="empty-state"><strong>Aún no sigues a nadie</strong>No todo lo que importa necesita ser público. Añade a alguien con su código.</div>`;
@@ -2361,7 +2385,6 @@
   function closeAdd() { addOverlay.classList.remove('open'); }
 
   document.getElementById('btn-add').addEventListener('click', openAdd);
-  document.getElementById('mnav-add').addEventListener('click', (e) => { e.preventDefault(); openAdd(); });
   document.getElementById('add-close').addEventListener('click', closeAdd);
   addOverlay.addEventListener('click', (e) => { if (e.target === addOverlay) closeAdd(); });
 
@@ -2387,6 +2410,7 @@
           followed.unshift(found.id);
           saveFollowed(followed);
           await registerAsFollower(found.id, mine);
+          await registerAsFollowed(mine.id, found.id);
         }
         closeAdd();
         await renderProfileList();
@@ -2704,6 +2728,7 @@
     loadGroupsManagerList();
   }
   document.getElementById('nav-grupos').addEventListener('click', (e) => { e.preventDefault(); openGroupsManager(); });
+  document.getElementById('config-open-grupos').addEventListener('click', () => { configOverlay.classList.remove('open'); openGroupsManager(); });
   document.getElementById('groups-close').addEventListener('click', () => groupsOverlay.classList.remove('open'));
   groupsOverlay.addEventListener('click', (e) => { if (e.target === groupsOverlay) groupsOverlay.classList.remove('open'); });
 
@@ -2798,6 +2823,8 @@
     loadCarpetasManagerList();
   }
   document.getElementById('nav-carpetas').addEventListener('click', (e) => { e.preventDefault(); openCarpetasManager(); });
+  document.getElementById('mnav-carpetas').addEventListener('click', (e) => { e.preventDefault(); openCarpetasManager(); });
+  document.getElementById('config-open-carpetas').addEventListener('click', () => { configOverlay.classList.remove('open'); openCarpetasManager(); });
   document.getElementById('carpetas-close').addEventListener('click', () => carpetasOverlay.classList.remove('open'));
   carpetasOverlay.addEventListener('click', (e) => { if (e.target === carpetasOverlay) carpetasOverlay.classList.remove('open'); });
 
