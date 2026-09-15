@@ -988,8 +988,8 @@
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav">
-  <a class="active" href="#" id="mnav-inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg>Inicio</a>
-  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Perfiles</a>
+  <a class="active" href="#" id="mnav-config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.04 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04z"/></svg>Configuración</a>
+  <a href="#" id="mnav-perfiles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Perfiles</a>
   <a href="#" id="mnav-carpetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Carpetas</a>
   <a href="#" id="mnav-bandeja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v4l2.5 1.5"/></svg>Bandeja<span class="badge-count" id="bandeja-badge-mobile"></span></a>
 </nav>
@@ -1209,6 +1209,20 @@
 </div>
 
 <!-- Carpetas (organizar tus seguidores para encontrarlos rápido) -->
+<!-- Perfiles (lista flotante con buscador, para acceso rápido desde celular) -->
+<div class="sheet-overlay" id="perfiles-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Perfiles</h3>
+      <button class="sheet-close" id="perfiles-overlay-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <input class="sheet-input" id="perfiles-overlay-search" type="text" placeholder="Buscar por nombre…" style="margin-bottom:14px;">
+    <div id="perfiles-overlay-list" class="profile-list"></div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="carpetas-overlay">
   <div class="sheet">
     <div class="sheet-head">
@@ -1233,6 +1247,19 @@
 </div>
 
 <!-- Configuración / cuenta -->
+<!-- Ver foto de perfil ampliada (solo la imagen, nada más) -->
+<div class="sheet-overlay" id="avatar-lightbox-overlay">
+  <div class="sheet" style="max-width:420px; text-align:center;">
+    <div class="sheet-head" style="margin-bottom:14px;">
+      <h3>Tu foto</h3>
+      <button class="sheet-close" id="avatar-lightbox-close" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="avatar-lightbox-img" style="width:100%; aspect-ratio:1; border-radius:var(--radius-m); background-size:cover; background-position:center; background-color:var(--bg-elevated); border:1px solid var(--line);"></div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="config-overlay">
   <div class="sheet">
     <div class="sheet-head">
@@ -1252,6 +1279,7 @@
         <div class="code" id="config-code-value">------</div>
       </div>
     </div>
+    <button type="button" class="copy-btn" id="config-open-gallery" style="width:100%; margin-bottom:10px;">Mi galería</button>
     <button type="button" class="copy-btn" id="config-open-grupos" style="width:100%; margin-bottom:10px;">Tus grupos</button>
     <button type="button" class="copy-btn" id="config-open-carpetas" style="width:100%; margin-bottom:24px;">Tus carpetas</button>
     <button class="sheet-submit" id="logout-submit" style="background:var(--ember);">Cerrar sesión</button>
@@ -2084,13 +2112,6 @@
     profileList.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  document.getElementById('mnav-inicio').addEventListener('click', (e) => {
-    e.preventDefault();
-    document.querySelectorAll('.sheet-overlay.open').forEach(o => o.classList.remove('open'));
-    setActiveNav(navInicio);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
   document.getElementById('bandeja-close').addEventListener('click', () => bandejaOverlay.classList.remove('open'));
   bandejaOverlay.addEventListener('click', (e) => { if (e.target === bandejaOverlay) bandejaOverlay.classList.remove('open'); });
 
@@ -2131,6 +2152,29 @@
     return d.innerHTML;
   }
 
+  function profileRowHTML(p) {
+    return `
+      <div class="profile-row ${p.unreadCount > 0 ? 'has-update' : ''}" data-id="${p.id}">
+        <div class="profile-avatar" style="${p.fotoUrl ? `background-image:url('${p.fotoUrl}')` : 'background-image:linear-gradient(135deg,#3d3f42,#1c1d1f)'}"></div>
+        <div class="profile-info">
+          <div class="profile-name" style="${p.unreadCount > 0 ? 'color:var(--neon-blue-bright);' : ''}">${escapeHtml(p.nombre)}</div>
+          <div class="profile-tags"><span class="tag">${escapeHtml(p.rol)}</span></div>
+        </div>
+        ${p.unreadCount > 0 ? `<div class="profile-status update">${p.unreadCount === 1 ? "Nueva publicación" : `${p.unreadCount} publicaciones nuevas`}</div>` : ''}
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    `;
+  }
+
+  function wireProfileRowClicks(container, rows) {
+    container.querySelectorAll('.profile-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const p = rows.find(r => r.id === row.dataset.id);
+        openFeed(p);
+      });
+    });
+  }
+
   async function renderProfileList() {
     const mineForSync = getMyProfile();
     let followed;
@@ -2165,27 +2209,41 @@
     }
     rows.sort((a, b) => b.newest - a.newest);
     latestFollowedRows = rows;
-    profileList.innerHTML = rows.map(p => `
-      <div class="profile-row ${p.unreadCount > 0 ? 'has-update' : ''}" data-id="${p.id}">
-        <div class="profile-avatar" style="${p.fotoUrl ? `background-image:url('${p.fotoUrl}')` : 'background-image:linear-gradient(135deg,#3d3f42,#1c1d1f)'}"></div>
-        <div class="profile-info">
-          <div class="profile-name">${escapeHtml(p.nombre)}</div>
-          <div class="profile-tags"><span class="tag">${escapeHtml(p.rol)}</span></div>
-        </div>
-        <div class="profile-status ${p.unreadCount > 0 ? 'update' : ''}">${
-          p.unreadCount > 0 ? (p.unreadCount === 1 ? "Nueva publicación" : `${p.unreadCount} publicaciones nuevas`) : "Sin novedades"
-        }</div>
-        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
-    `).join("");
-
-    profileList.querySelectorAll('.profile-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const p = rows.find(r => r.id === row.dataset.id);
-        openFeed(p);
-      });
-    });
+    profileList.innerHTML = rows.map(profileRowHTML).join("");
+    wireProfileRowClicks(profileList, rows);
   }
+
+  const perfilesOverlay = document.getElementById('perfiles-overlay');
+  const perfilesOverlayList = document.getElementById('perfiles-overlay-list');
+  const perfilesOverlaySearch = document.getElementById('perfiles-overlay-search');
+
+  function renderPerfilesOverlayList() {
+    const q = perfilesOverlaySearch.value.trim().toLowerCase();
+    const rows = q
+      ? latestFollowedRows.filter(p => (p.nombre || '').toLowerCase().includes(q))
+      : latestFollowedRows;
+    if (latestFollowedRows.length === 0) {
+      perfilesOverlayList.innerHTML = `<div class="empty-state"><strong>Aún no sigues a nadie</strong>No todo lo que importa necesita ser público. Añade a alguien con su código.</div>`;
+      return;
+    }
+    if (rows.length === 0) {
+      perfilesOverlayList.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie coincide con esa búsqueda.</div>`;
+      return;
+    }
+    perfilesOverlayList.innerHTML = rows.map(profileRowHTML).join("");
+    wireProfileRowClicks(perfilesOverlayList, rows);
+  }
+
+  async function openPerfilesOverlay() {
+    perfilesOverlay.classList.add('open');
+    perfilesOverlaySearch.value = "";
+    if (latestFollowedRows.length === 0) await renderProfileList();
+    renderPerfilesOverlayList();
+  }
+  perfilesOverlaySearch.addEventListener('input', renderPerfilesOverlayList);
+  document.getElementById('perfiles-overlay-close').addEventListener('click', () => perfilesOverlay.classList.remove('open'));
+  perfilesOverlay.addEventListener('click', (e) => { if (e.target === perfilesOverlay) perfilesOverlay.classList.remove('open'); });
+  document.getElementById('mnav-perfiles').addEventListener('click', (e) => { e.preventDefault(); openPerfilesOverlay(); });
 
   function openFeed(profile) {
     document.getElementById('feed-title').textContent = profile.nombre;
@@ -2213,7 +2271,17 @@
     configOverlay.classList.add('open');
   }
   document.getElementById('nav-config').addEventListener('click', (e) => { e.preventDefault(); openConfig(); });
-  document.getElementById('btn-avatar').addEventListener('click', openGallery);
+  document.getElementById('btn-avatar').addEventListener('click', openAvatarLightbox);
+  function openAvatarLightbox() {
+    const mine = getMyProfile();
+    const img = document.getElementById('avatar-lightbox-img');
+    img.style.backgroundImage = mine?.fotoUrl ? `url('${mine.fotoUrl}')` : 'linear-gradient(135deg,#3d3f42,#1c1d1f)';
+    document.getElementById('avatar-lightbox-overlay').classList.add('open');
+  }
+  document.getElementById('avatar-lightbox-close').addEventListener('click', () => document.getElementById('avatar-lightbox-overlay').classList.remove('open'));
+  document.getElementById('avatar-lightbox-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+  document.getElementById('config-open-gallery').addEventListener('click', () => { configOverlay.classList.remove('open'); openGallery(); });
+  document.getElementById('mnav-config').addEventListener('click', (e) => { e.preventDefault(); openConfig(); });
   document.getElementById('config-close').addEventListener('click', () => configOverlay.classList.remove('open'));
   configOverlay.addEventListener('click', (e) => { if (e.target === configOverlay) configOverlay.classList.remove('open'); });
 
