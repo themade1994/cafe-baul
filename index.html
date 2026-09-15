@@ -1254,12 +1254,21 @@
 <div class="sheet-overlay" id="avatar-lightbox-overlay">
   <div class="sheet" style="max-width:420px; text-align:center;">
     <div class="sheet-head" style="margin-bottom:14px;">
-      <h3>Tu foto</h3>
+      <h3 id="avatar-lightbox-title">Tu foto</h3>
       <button class="sheet-close" id="avatar-lightbox-close" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
     <div id="avatar-lightbox-img" style="width:100%; aspect-ratio:1; border-radius:var(--radius-m); background-size:cover; background-position:center; background-color:var(--bg-elevated); border:1px solid var(--line);"></div>
+    <div id="avatar-lightbox-code-block" style="display:none; margin-top:16px;">
+      <div class="my-code-card">
+        <div>
+          <div class="label">Código de perfil</div>
+          <div class="code" id="avatar-lightbox-code-value">------</div>
+        </div>
+        <button type="button" class="copy-btn" id="avatar-lightbox-code-copy">Copiar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2175,6 +2184,15 @@
         const p = rows.find(r => r.id === row.dataset.id);
         openFeed(p);
       });
+      const avatarEl = row.querySelector('.profile-avatar');
+      if (avatarEl) {
+        avatarEl.style.cursor = 'zoom-in';
+        avatarEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const p = rows.find(r => r.id === row.dataset.id);
+          openPhotoLightbox(p.fotoUrl, p.nombre, p.codigo);
+        });
+      }
     });
   }
 
@@ -2274,13 +2292,30 @@
     configOverlay.classList.add('open');
   }
   document.getElementById('nav-config').addEventListener('click', (e) => { e.preventDefault(); openConfig(); });
-  document.getElementById('btn-avatar').addEventListener('click', openAvatarLightbox);
-  function openAvatarLightbox() {
+  document.getElementById('btn-avatar').addEventListener('click', () => {
     const mine = getMyProfile();
+    openPhotoLightbox(mine?.fotoUrl, 'Tu foto', null);
+  });
+  function openPhotoLightbox(fotoUrl, title, codigo) {
+    document.getElementById('avatar-lightbox-title').textContent = title || 'Foto';
     const img = document.getElementById('avatar-lightbox-img');
-    img.style.backgroundImage = mine?.fotoUrl ? `url('${mine.fotoUrl}')` : 'linear-gradient(135deg,#3d3f42,#1c1d1f)';
+    img.style.backgroundImage = fotoUrl ? `url('${fotoUrl}')` : 'linear-gradient(135deg,#3d3f42,#1c1d1f)';
+    const codeBlock = document.getElementById('avatar-lightbox-code-block');
+    if (codigo) {
+      document.getElementById('avatar-lightbox-code-value').textContent = codigo;
+      codeBlock.style.display = 'block';
+    } else {
+      codeBlock.style.display = 'none';
+    }
     document.getElementById('avatar-lightbox-overlay').classList.add('open');
   }
+  document.getElementById('avatar-lightbox-code-copy').addEventListener('click', () => {
+    const code = document.getElementById('avatar-lightbox-code-value').textContent;
+    navigator.clipboard?.writeText(code);
+    const btn = document.getElementById('avatar-lightbox-code-copy');
+    btn.textContent = "Copiado";
+    setTimeout(() => btn.textContent = "Copiar", 1500);
+  });
   document.getElementById('avatar-lightbox-close').addEventListener('click', () => document.getElementById('avatar-lightbox-overlay').classList.remove('open'));
   document.getElementById('avatar-lightbox-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
   document.getElementById('config-open-gallery').addEventListener('click', () => { configOverlay.classList.remove('open'); openGallery(); });
