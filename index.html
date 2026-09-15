@@ -1234,17 +1234,25 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-    <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Organiza a quienes te siguen en carpetas (familia, amigos…) para encontrarlos rápido cuando armes un grupo.</p>
-    <div id="carpetas-manager-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
-    <button type="button" class="copy-btn" id="sidebar-new-carpeta-toggle" style="width:100%;">+ Crear una carpeta nueva</button>
-    <div id="sidebar-new-carpeta-form" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
-      <label class="field-label" for="sidebar-new-carpeta-name">Nombre de la carpeta</label>
-      <input class="sheet-input" id="sidebar-new-carpeta-name" type="text" placeholder="Ej: Familia, Amigos, Trabajo" maxlength="30">
-      <div class="field-label">¿A quién agrupa?</div>
-      <input class="sheet-input follower-search-input" id="sidebar-new-carpeta-members-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
-      <div id="sidebar-new-carpeta-members" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
-      <div class="sheet-error" id="sidebar-new-carpeta-error"></div>
-      <button type="button" class="sheet-submit" id="sidebar-new-carpeta-save">Guardar carpeta</button>
+    <div id="carpetas-list-view">
+      <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 18px;">Organiza a quienes te siguen en carpetas (familia, amigos…) para encontrarlos rápido cuando armes un grupo.</p>
+      <div id="carpetas-manager-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
+      <button type="button" class="copy-btn" id="sidebar-new-carpeta-toggle" style="width:100%;">+ Crear una carpeta nueva</button>
+      <div id="sidebar-new-carpeta-form" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+        <label class="field-label" for="sidebar-new-carpeta-name">Nombre de la carpeta</label>
+        <input class="sheet-input" id="sidebar-new-carpeta-name" type="text" placeholder="Ej: Familia, Amigos, Trabajo" maxlength="30">
+        <div class="field-label">¿A quién agrupa?</div>
+        <input class="sheet-input follower-search-input" id="sidebar-new-carpeta-members-search" type="text" placeholder="Buscar por nombre o rol…" style="margin-bottom:10px; display:none;">
+        <div id="sidebar-new-carpeta-members" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+        <div class="sheet-error" id="sidebar-new-carpeta-error"></div>
+        <button type="button" class="sheet-submit" id="sidebar-new-carpeta-save">Guardar carpeta</button>
+      </div>
+    </div>
+    <div id="carpetas-detail-view" style="display:none;">
+      <button type="button" class="copy-btn" id="carpeta-detail-back" style="margin-bottom:14px;">&larr; Volver a carpetas</button>
+      <h4 id="carpeta-detail-title" style="margin:0 0 4px;"></h4>
+      <p id="carpeta-detail-count" style="color:var(--ink-muted); font-size:0.85rem; margin:0 0 16px;"></p>
+      <div id="carpeta-detail-members" class="profile-list"></div>
     </div>
   </div>
 </div>
@@ -2172,7 +2180,7 @@
           <div class="profile-name" style="${p.unreadCount > 0 ? 'color:var(--neon-blue-bright);' : ''}">${escapeHtml(p.nombre)}</div>
           <div class="profile-tags"><span class="tag">${escapeHtml(p.rol)}</span></div>
         </div>
-        ${p.unreadCount > 0 ? `<div class="profile-status update">${p.unreadCount === 1 ? "Nueva publicación" : `${p.unreadCount} publicaciones nuevas`}</div>` : ''}
+        <div class="profile-status ${p.unreadCount > 0 ? 'update' : ''}">${p.unreadCount > 0 ? (p.unreadCount === 1 ? "Nueva publicación" : `${p.unreadCount} publicaciones nuevas`) : "Sin novedades"}</div>
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
       </div>
     `;
@@ -2194,6 +2202,26 @@
         });
       }
     });
+  }
+
+  // Dado un listado de ids de perfiles, trae su info en vivo (foto, publicaciones visibles, novedades).
+  // Se usa tanto para "a quién sigo" como para los miembros de una carpeta.
+  async function buildProfileRows(ids) {
+    const mine = getMyProfile();
+    const rows = [];
+    for (const id of ids) {
+      try {
+        const snap = await getDoc(doc(db, "perfiles", id));
+        if (!snap.exists()) continue;
+        const posts = await fetchVisiblePosts(id, mine.id);
+        const seen = getSeen(id);
+        const newest = posts[0]?.creado?.toMillis?.() || 0;
+        const unreadCount = posts.filter(p => (p.creado?.toMillis?.() || 0) > seen).length;
+        rows.push({ id, ...snap.data(), posts, unreadCount, newest });
+      } catch (e) { /* perfil no disponible, se omite */ }
+    }
+    rows.sort((a, b) => b.newest - a.newest);
+    return rows;
   }
 
   async function renderProfileList() {
@@ -2879,25 +2907,62 @@
 
   // ---------- Carpetas (organizar seguidores, desde el menú lateral) ----------
   const carpetasOverlay = document.getElementById('carpetas-overlay');
+  let currentCarpetas = [];
 
   async function loadCarpetasManagerList() {
     const mine = getMyProfile();
     const list = document.getElementById('carpetas-manager-list');
     list.innerHTML = `<div class="spinner-row">Cargando carpetas…</div>`;
     const carpetas = await getMyCarpetas(mine.id);
+    currentCarpetas = carpetas;
     if (carpetas.length === 0) {
       list.innerHTML = `<div class="sheet-hint" style="margin:0;">Aún no tienes carpetas. Crea la primera abajo.</div>`;
       document.getElementById('sidebar-new-carpeta-form').style.display = 'block';
       await fillSidebarCarpetaMembers();
     } else {
       list.innerHTML = carpetas.map(c => `
-        <div class="mode-option" style="cursor:default;">
+        <div class="mode-option" data-id="${c.id}" style="cursor:pointer;">
           <span class="mode-dot" style="visibility:hidden;"></span>
           <span><strong>${escapeHtml(c.nombre)}</strong><br><span>${c.miembros.length} persona${c.miembros.length === 1 ? '' : 's'}</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;"><path d="M9 6l6 6-6 6"/></svg>
         </div>
       `).join("");
+      list.querySelectorAll('.mode-option').forEach(row => {
+        row.addEventListener('click', () => {
+          const c = currentCarpetas.find(x => x.id === row.dataset.id);
+          if (c) openCarpetaDetail(c);
+        });
+      });
     }
   }
+
+  async function openCarpetaDetail(carpeta) {
+    document.getElementById('carpetas-list-view').style.display = 'none';
+    document.getElementById('carpetas-detail-view').style.display = 'block';
+    document.getElementById('carpeta-detail-title').textContent = carpeta.nombre;
+    const countEl = document.getElementById('carpeta-detail-count');
+    const membersEl = document.getElementById('carpeta-detail-members');
+    membersEl.innerHTML = `<div class="spinner-row">Cargando…</div>`;
+    countEl.textContent = "";
+    if (!carpeta.miembros || carpeta.miembros.length === 0) {
+      membersEl.innerHTML = `<div class="sheet-hint" style="margin:0;">Esta carpeta está vacía.</div>`;
+      return;
+    }
+    const rows = await buildProfileRows(carpeta.miembros);
+    countEl.textContent = `${rows.length} persona${rows.length === 1 ? '' : 's'}`;
+    if (rows.length === 0) {
+      membersEl.innerHTML = `<div class="sheet-hint" style="margin:0;">No se pudo cargar a nadie de esta carpeta.</div>`;
+      return;
+    }
+    membersEl.innerHTML = rows.map(profileRowHTML).join("");
+    wireProfileRowClicks(membersEl, rows);
+  }
+
+  function closeCarpetaDetail() {
+    document.getElementById('carpetas-detail-view').style.display = 'none';
+    document.getElementById('carpetas-list-view').style.display = 'block';
+  }
+  document.getElementById('carpeta-detail-back').addEventListener('click', closeCarpetaDetail);
 
   async function fillSidebarCarpetaMembers() {
     const mine = getMyProfile();
@@ -2925,6 +2990,7 @@
     document.getElementById('sidebar-new-carpeta-form').style.display = 'none';
     document.getElementById('sidebar-new-carpeta-name').value = "";
     document.getElementById('sidebar-new-carpeta-error').classList.remove('show');
+    closeCarpetaDetail();
     carpetasOverlay.classList.add('open');
     loadCarpetasManagerList();
   }
