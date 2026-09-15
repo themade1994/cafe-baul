@@ -411,6 +411,9 @@
     z-index: 30;
   }
   .sheet-overlay.open { display: flex; }
+  html.modal-lock, body.modal-lock { overflow: hidden; height: 100%; touch-action: none; }
+  .sheet-overlay { touch-action: auto; }
+  .sheet { touch-action: pan-y; }
 
   .sheet {
     background: var(--bg-panel);
@@ -3089,5 +3092,19 @@
   init();
 </script>
 
+<script>
+  (function () {
+    function syncBodyScrollLock() {
+      const anyOpen = document.querySelector('.sheet-overlay.open');
+      document.documentElement.classList.toggle('modal-lock', !!anyOpen);
+      document.body.classList.toggle('modal-lock', !!anyOpen);
+    }
+    const observer = new MutationObserver(syncBodyScrollLock);
+    document.querySelectorAll('.sheet-overlay').forEach(el => {
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+    syncBodyScrollLock();
+  })();
+</script>
 </body>
 </html>
