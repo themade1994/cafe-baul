@@ -688,6 +688,11 @@
     cursor: pointer;
   }
   .follower-check input { accent-color: var(--brass); width: 15px; height: 15px; }
+  .follower-check-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background-size: cover; background-position: center;
+    background-color: var(--bg-elevated); border: 1px solid var(--line);
+  }
 
   .post-card {
     border-bottom: 1px solid var(--line);
@@ -1276,6 +1281,7 @@
         </div>
         <button type="button" class="copy-btn" id="avatar-lightbox-code-copy">Copiar</button>
       </div>
+      <button type="button" class="copy-btn" id="avatar-lightbox-delete" style="display:none; width:100%; margin-top:10px; border-color:#c0392b; color:#c0392b;">Eliminar</button>
     </div>
   </div>
 </div>
@@ -1499,7 +1505,14 @@
 
   async function getMyFollowers(myId) {
     const snap = await getDocs(collection(db, "perfiles", myId, "seguidores"));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const base = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    await Promise.all(base.map(async (f) => {
+      try {
+        const pSnap = await getDoc(doc(db, "perfiles", f.id));
+        f.fotoUrl = pSnap.exists() ? pSnap.data().fotoUrl : null;
+      } catch (e) { f.fotoUrl = null; }
+    }));
+    return base;
   }
 
   async function registerAsFollowed(myId, creatorId) {
@@ -1510,6 +1523,18 @@
   async function getMyFollowedIds(myId) {
     const snap = await getDocs(collection(db, "perfiles", myId, "siguiendo"));
     return snap.docs.map(d => d.id);
+  }
+
+  // Fila reutilizable para elegir seguidores (checkbox + foto + nombre/rol).
+  function followerCheckRowHTML(f) {
+    const bg = f.fotoUrl ? `background-image:url('${f.fotoUrl}')` : 'background-image:linear-gradient(135deg,#3d3f42,#1c1d1f)';
+    return `
+      <label class="follower-check">
+        <input type="checkbox" value="${f.id}">
+        <span class="follower-check-avatar" style="${bg}"></span>
+        <span>${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span></span>
+      </label>
+    `;
   }
 
   // Filtra en vivo una lista de seguidores (.follower-check) por texto y, opcionalmente, por carpeta.
@@ -2186,7 +2211,7 @@
     `;
   }
 
-  function wireProfileRowClicks(container, rows) {
+  function wireProfileRowClicks(container, rows, context) {
     container.querySelectorAll('.profile-row').forEach(row => {
       row.addEventListener('click', () => {
         const p = rows.find(r => r.id === row.dataset.id);
@@ -2198,7 +2223,7 @@
         avatarEl.addEventListener('click', (e) => {
           e.stopPropagation();
           const p = rows.find(r => r.id === row.dataset.id);
-          openPhotoLightbox(p.fotoUrl, p.nombre, p.codigo);
+          openPhotoLightbox(p.fotoUrl, p.nombre, p.codigo, { id: p.id, context });
         });
       }
     });
@@ -2259,7 +2284,7 @@
     rows.sort((a, b) => b.newest - a.newest);
     latestFollowedRows = rows;
     profileList.innerHTML = rows.map(profileRowHTML).join("");
-    wireProfileRowClicks(profileList, rows);
+    wireProfileRowClicks(profileList, rows, 'followed');
   }
 
   const perfilesOverlay = document.getElementById('perfiles-overlay');
@@ -2280,7 +2305,7 @@
       return;
     }
     perfilesOverlayList.innerHTML = rows.map(profileRowHTML).join("");
-    wireProfileRowClicks(perfilesOverlayList, rows);
+    wireProfileRowClicks(perfilesOverlayList, rows, 'followed');
   }
 
   async function openPerfilesOverlay() {
@@ -2324,17 +2349,21 @@
     const mine = getMyProfile();
     openPhotoLightbox(mine?.fotoUrl, 'Tu foto', null);
   });
-  function openPhotoLightbox(fotoUrl, title, codigo) {
+  let currentLightboxMeta = null;
+  function openPhotoLightbox(fotoUrl, title, codigo, meta) {
+    currentLightboxMeta = meta && meta.id ? { ...meta, nombre: title } : null;
     document.getElementById('avatar-lightbox-title').textContent = title || 'Foto';
     const img = document.getElementById('avatar-lightbox-img');
     img.style.backgroundImage = fotoUrl ? `url('${fotoUrl}')` : 'linear-gradient(135deg,#3d3f42,#1c1d1f)';
     const codeBlock = document.getElementById('avatar-lightbox-code-block');
+    const deleteBtn = document.getElementById('avatar-lightbox-delete');
     if (codigo) {
       document.getElementById('avatar-lightbox-code-value').textContent = codigo;
       codeBlock.style.display = 'block';
     } else {
       codeBlock.style.display = 'none';
     }
+    deleteBtn.style.display = currentLightboxMeta ? 'block' : 'none';
     document.getElementById('avatar-lightbox-overlay').classList.add('open');
   }
   document.getElementById('avatar-lightbox-code-copy').addEventListener('click', () => {
@@ -2346,6 +2375,53 @@
   });
   document.getElementById('avatar-lightbox-close').addEventListener('click', () => document.getElementById('avatar-lightbox-overlay').classList.remove('open'));
   document.getElementById('avatar-lightbox-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+  async function removeFollowed(myId, otherId) {
+    await deleteDoc(doc(db, "perfiles", myId, "siguiendo", otherId));
+    saveFollowed(getFollowed().filter(id => id !== otherId));
+  }
+  async function removeFollower(myId, otherId) {
+    await deleteDoc(doc(db, "perfiles", myId, "seguidores", otherId));
+    const carpetas = await getMyCarpetas(myId);
+    for (const c of carpetas) {
+      if (c.miembros.includes(otherId)) {
+        await updateDoc(doc(db, "perfiles", myId, "carpetas", c.id), { miembros: c.miembros.filter(id => id !== otherId) });
+      }
+    }
+  }
+  document.getElementById('avatar-lightbox-delete').addEventListener('click', async () => {
+    if (!currentLightboxMeta) return;
+    const { id, context, nombre } = currentLightboxMeta;
+    const isFollower = context === 'follower';
+    const msg = isFollower
+      ? `¿Eliminar a ${nombre} de tus seguidores? También se quitará de todas tus carpetas.`
+      : `¿Dejar de seguir a ${nombre}? Ya no verás sus publicaciones en tu lista.`;
+    if (!confirm(msg)) return;
+    const btn = document.getElementById('avatar-lightbox-delete');
+    const original = btn.textContent;
+    btn.textContent = "Eliminando…";
+    btn.disabled = true;
+    try {
+      const mine = getMyProfile();
+      if (isFollower) {
+        await removeFollower(mine.id, id);
+        if (currentOpenCarpeta) {
+          currentOpenCarpeta.miembros = currentOpenCarpeta.miembros.filter(m => m !== id);
+          await openCarpetaDetail(currentOpenCarpeta);
+        }
+      } else {
+        await removeFollowed(mine.id, id);
+        await renderProfileList();
+        if (perfilesOverlay.classList.contains('open')) await renderPerfilesOverlayList();
+      }
+      document.getElementById('avatar-lightbox-overlay').classList.remove('open');
+    } catch (e) {
+      alert("No se pudo completar la acción. Intenta de nuevo.");
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  });
   document.getElementById('config-open-gallery').addEventListener('click', () => { configOverlay.classList.remove('open'); openGallery(); });
   document.getElementById('mnav-config').addEventListener('click', (e) => { e.preventDefault(); openConfig(); });
   document.getElementById('config-close').addEventListener('click', () => configOverlay.classList.remove('open'));
@@ -2726,11 +2802,7 @@
         if (followers.length === 0) {
           list.innerHTML = `<div class="sheet-hint" style="margin:0;">Todavía nadie te ha añadido con tu código, así que no hay a quién autorizar.</div>`;
         } else {
-          list.innerHTML = followers.map(f => `
-            <label class="follower-check">
-              <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
-            </label>
-          `).join("");
+          list.innerHTML = followers.map(followerCheckRowHTML).join("");
           if (followers.length > 6) {
             searchInput.style.display = 'block';
             const carpetas = await getMyCarpetas(mine.id);
@@ -2787,11 +2859,7 @@
     if (followers.length === 0) {
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
     } else {
-      container.innerHTML = followers.map(f => `
-        <label class="follower-check">
-          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
-        </label>
-      `).join("");
+      container.innerHTML = followers.map(followerCheckRowHTML).join("");
       if (followers.length > 6) {
         searchInput.style.display = 'block';
         const carpetas = await getMyCarpetas(mine.id);
@@ -2841,11 +2909,7 @@
     if (followers.length === 0) {
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
     } else {
-      container.innerHTML = followers.map(f => `
-        <label class="follower-check">
-          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
-        </label>
-      `).join("");
+      container.innerHTML = followers.map(followerCheckRowHTML).join("");
       if (followers.length > 6) {
         searchInput.style.display = 'block';
         const carpetas = await getMyCarpetas(mine.id);
@@ -2908,6 +2972,7 @@
   // ---------- Carpetas (organizar seguidores, desde el menú lateral) ----------
   const carpetasOverlay = document.getElementById('carpetas-overlay');
   let currentCarpetas = [];
+  let currentOpenCarpeta = null;
 
   async function loadCarpetasManagerList() {
     const mine = getMyProfile();
@@ -2937,6 +3002,7 @@
   }
 
   async function openCarpetaDetail(carpeta) {
+    currentOpenCarpeta = carpeta;
     document.getElementById('carpetas-list-view').style.display = 'none';
     document.getElementById('carpetas-detail-view').style.display = 'block';
     document.getElementById('carpeta-detail-title').textContent = carpeta.nombre;
@@ -2955,10 +3021,11 @@
       return;
     }
     membersEl.innerHTML = rows.map(profileRowHTML).join("");
-    wireProfileRowClicks(membersEl, rows);
+    wireProfileRowClicks(membersEl, rows, 'follower');
   }
 
   function closeCarpetaDetail() {
+    currentOpenCarpeta = null;
     document.getElementById('carpetas-detail-view').style.display = 'none';
     document.getElementById('carpetas-list-view').style.display = 'block';
   }
@@ -2974,11 +3041,7 @@
     if (followers.length === 0) {
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a una carpeta.</div>`;
     } else {
-      container.innerHTML = followers.map(f => `
-        <label class="follower-check">
-          <input type="checkbox" value="${f.id}"> ${escapeHtml(f.nombre)} <span style="color:var(--ink-faint)">· ${escapeHtml(f.rol)}</span>
-        </label>
-      `).join("");
+      container.innerHTML = followers.map(followerCheckRowHTML).join("");
       if (followers.length > 6) {
         searchInput.style.display = 'block';
         wireFollowerFilters(searchInput, container);
