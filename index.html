@@ -2803,11 +2803,9 @@
           list.innerHTML = `<div class="sheet-hint" style="margin:0;">Todavía nadie te ha añadido con tu código, así que no hay a quién autorizar.</div>`;
         } else {
           list.innerHTML = followers.map(followerCheckRowHTML).join("");
-          if (followers.length > 6) {
-            searchInput.style.display = 'block';
-            const carpetas = await getMyCarpetas(mine.id);
-            wireFollowerFilters(searchInput, list, folderFilter, carpetas);
-          }
+          searchInput.style.display = 'block';
+          const carpetas = await getMyCarpetas(mine.id);
+          wireFollowerFilters(searchInput, list, folderFilter, carpetas);
         }
       } else if (selectedMode === 'grupal') {
         document.getElementById('grupal-picker').style.display = 'block';
@@ -2860,11 +2858,9 @@
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
     } else {
       container.innerHTML = followers.map(followerCheckRowHTML).join("");
-      if (followers.length > 6) {
-        searchInput.style.display = 'block';
-        const carpetas = await getMyCarpetas(mine.id);
-        wireFollowerFilters(searchInput, container, folderFilter, carpetas);
-      }
+      searchInput.style.display = 'block';
+      const carpetas = await getMyCarpetas(mine.id);
+      wireFollowerFilters(searchInput, container, folderFilter, carpetas);
     }
   }
 
@@ -2910,11 +2906,9 @@
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a un grupo.</div>`;
     } else {
       container.innerHTML = followers.map(followerCheckRowHTML).join("");
-      if (followers.length > 6) {
-        searchInput.style.display = 'block';
-        const carpetas = await getMyCarpetas(mine.id);
-        wireFollowerFilters(searchInput, container, folderFilter, carpetas);
-      }
+      searchInput.style.display = 'block';
+      const carpetas = await getMyCarpetas(mine.id);
+      wireFollowerFilters(searchInput, container, folderFilter, carpetas);
     }
   }
 
@@ -3042,10 +3036,8 @@
       container.innerHTML = `<div class="sheet-hint" style="margin:0;">Nadie te ha añadido con tu código todavía, así que no hay a quién sumar a una carpeta.</div>`;
     } else {
       container.innerHTML = followers.map(followerCheckRowHTML).join("");
-      if (followers.length > 6) {
-        searchInput.style.display = 'block';
-        wireFollowerFilters(searchInput, container);
-      }
+      searchInput.style.display = 'block';
+      wireFollowerFilters(searchInput, container);
     }
   }
 
