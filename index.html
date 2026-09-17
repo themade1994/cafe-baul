@@ -1171,6 +1171,17 @@
         <button type="button" class="copy-btn" id="publish-photo-remove" style="width:100%; margin-top:8px;">Quitar foto</button>
       </div>
     </div>
+    <!-- Imagen de referencia (solo para texto y audio, que no tienen imagen propia) -->
+    <div id="publish-cover-block" style="display:none;">
+      <input type="file" id="publish-cover-input" accept="image/*" style="display:none;">
+      <div id="publish-cover-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-cover-btn" style="width:100%;">+ Imagen de referencia (opcional)</button>
+      </div>
+      <div id="publish-cover-preview" style="display:none; margin-bottom:16px; position:relative;">
+        <img id="publish-cover-img" style="width:100%; max-height:220px; object-fit:cover; border-radius:var(--radius-s); display:block; background:#000;">
+        <button type="button" class="copy-btn" id="publish-cover-remove" style="width:100%; margin-top:8px;">Quitar imagen</button>
+      </div>
+    </div>
     <div class="sheet-error" id="publish-error"></div>
     <button class="sheet-submit" id="publish-submit">Publicar</button>
   </div>
@@ -1719,6 +1730,7 @@
       descripcion: descripcion || null,
       texto,
       imagenUrl: urls.imagenUrl || null,
+      portadaUrl: urls.portadaUrl || null,
       pdfUrl: urls.pdfUrl || null,
       audioUrl: urls.audioUrl || null,
       videoUrl: urls.videoUrl || null,
@@ -1774,6 +1786,7 @@
           'Selectivo'
         }</div>
         ${p.titulo ? `<h4 class="post-title">${escapeHtml(p.titulo)}</h4>` : ''}
+        ${p.portadaUrl ? `<img src="${p.portadaUrl}" style="width:100%; max-height:260px; object-fit:cover; border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
         ${p.descripcion ? `<p class="post-description">${escapeHtml(p.descripcion)}</p>` : ''}
         ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
         ${p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
@@ -1962,7 +1975,7 @@
 
   function renderRecentCardHTML(p) {
     const meta = typeMeta(p.tipo);
-    const thumbUrl = p.imagenUrl || p.videoThumbUrl || null;
+    const thumbUrl = p.imagenUrl || p.videoThumbUrl || p.portadaUrl || null;
     const thumbStyle = thumbUrl
       ? `background-image:url('${thumbUrl}'); background-size:cover; background-position:center;`
       : `background:linear-gradient(135deg, var(--bg-elevated), var(--bg-panel));`;
@@ -2672,6 +2685,7 @@
     document.getElementById('publish-audio-block').style.display = type === 'audio' ? 'block' : 'none';
     document.getElementById('publish-video-block').style.display = type === 'video' ? 'block' : 'none';
     document.getElementById('publish-image-block').style.display = type === 'imagen' ? 'block' : 'none';
+    document.getElementById('publish-cover-block').style.display = (type === 'texto' || type === 'audio') ? 'block' : 'none';
   }
 
   document.querySelectorAll('.type-btn').forEach(btn => {
@@ -3147,6 +3161,26 @@
     document.getElementById('publish-photo-row').style.display = 'block';
   });
 
+  let selectedCoverFile = null;
+
+  document.getElementById('publish-cover-btn').addEventListener('click', () => {
+    document.getElementById('publish-cover-input').click();
+  });
+  document.getElementById('publish-cover-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedCoverFile = file;
+    document.getElementById('publish-cover-img').src = URL.createObjectURL(file);
+    document.getElementById('publish-cover-preview').style.display = 'block';
+    document.getElementById('publish-cover-row').style.display = 'none';
+  });
+  document.getElementById('publish-cover-remove').addEventListener('click', () => {
+    selectedCoverFile = null;
+    document.getElementById('publish-cover-input').value = "";
+    document.getElementById('publish-cover-preview').style.display = 'none';
+    document.getElementById('publish-cover-row').style.display = 'block';
+  });
+
   document.getElementById('publish-submit').addEventListener('click', async () => {
     const titulo = document.getElementById('publish-title').value.trim();
     const descripcion = document.getElementById('publish-description').value.trim();
@@ -3222,6 +3256,11 @@
       if (selectedContentType === 'video' && selectedVideoFile) {
         urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video', onProgress("Subiendo video"));
       }
+      if ((selectedContentType === 'texto' || selectedContentType === 'audio') && selectedCoverFile) {
+        btn.textContent = "Comprimiendo imagen…";
+        const coverBlob = await compressImage(selectedCoverFile);
+        urls.portadaUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
+      }
       btn.textContent = "Publicando…";
       await createPost(selectedContentType, titulo, descripcion, texto, selectedMode, autorizados, grupoNombre, urls);
       document.getElementById('publish-title').value = "";
@@ -3231,6 +3270,7 @@
       document.getElementById('publish-pdf-remove').click();
       document.getElementById('publish-audio-remove').click();
       document.getElementById('publish-video-remove').click();
+      document.getElementById('publish-cover-remove').click();
       switchContentType('texto');
       selectedGroupIds = new Set();
       publishOverlay.classList.remove('open');
