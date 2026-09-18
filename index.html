@@ -1730,7 +1730,6 @@
       descripcion: descripcion || null,
       texto,
       imagenUrl: urls.imagenUrl || null,
-      portadaUrl: urls.portadaUrl || null,
       pdfUrl: urls.pdfUrl || null,
       audioUrl: urls.audioUrl || null,
       videoUrl: urls.videoUrl || null,
@@ -1786,10 +1785,10 @@
           'Selectivo'
         }</div>
         ${p.titulo ? `<h4 class="post-title">${escapeHtml(p.titulo)}</h4>` : ''}
-        ${p.portadaUrl ? `<img src="${p.portadaUrl}" style="width:100%; max-height:260px; object-fit:cover; border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
+        ${(p.tipo === 'texto' || p.tipo === 'audio') && p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; max-height:260px; object-fit:cover; border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
         ${p.descripcion ? `<p class="post-description">${escapeHtml(p.descripcion)}</p>` : ''}
         ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
-        ${p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
+        ${p.imagenUrl && p.tipo !== 'texto' && p.tipo !== 'audio' ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
         ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="width:100%; margin-top:8px; display:block;"></audio>` : ''}
         ${p.videoUrl ? `<video src="${p.videoUrl}" ${p.videoThumbUrl ? `poster="${p.videoThumbUrl}"` : ''} controls style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;"></video>` : ''}
         ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
@@ -1975,7 +1974,7 @@
 
   function renderRecentCardHTML(p) {
     const meta = typeMeta(p.tipo);
-    const thumbUrl = p.imagenUrl || p.videoThumbUrl || p.portadaUrl || null;
+    const thumbUrl = p.imagenUrl || p.videoThumbUrl || null;
     const thumbStyle = thumbUrl
       ? `background-image:url('${thumbUrl}'); background-size:cover; background-position:center;`
       : `background:linear-gradient(135deg, var(--bg-elevated), var(--bg-panel));`;
@@ -3259,7 +3258,7 @@
       if ((selectedContentType === 'texto' || selectedContentType === 'audio') && selectedCoverFile) {
         btn.textContent = "Comprimiendo imagen…";
         const coverBlob = await compressImage(selectedCoverFile);
-        urls.portadaUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
+        urls.imagenUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
       }
       btn.textContent = "Publicando…";
       await createPost(selectedContentType, titulo, descripcion, texto, selectedMode, autorizados, grupoNombre, urls);
@@ -3278,6 +3277,7 @@
       await renderOwnFeed();
       renderRecentStrip();
     } catch (e) {
+      console.error("Error al publicar:", e);
       errorEl.textContent = "No se pudo publicar. Revisa tu conexión e intenta de nuevo.";
       errorEl.classList.add('show');
     }
