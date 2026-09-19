@@ -1100,7 +1100,7 @@
 <div class="sheet-overlay" id="sheet-overlay">
   <div class="sheet">
     <div class="sheet-head">
-      <h3>Publicar</h3>
+      <h3 id="publish-sheet-title">Publicar</h3>
       <button class="sheet-close" id="sheet-close" aria-label="Cerrar">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
@@ -1115,7 +1115,7 @@
       <button type="button" class="type-btn" data-type="video">Video</button>
       <button type="button" class="type-btn" data-type="imagen">Imagen</button>
     </div>
-    <div class="mode-options">
+    <div class="mode-options" id="mode-options">
       <div class="mode-option selected" data-mode="publico">
         <span class="mode-dot"></span>
         <span><strong>Público</strong><br><span>Cualquiera con tu código lo verá</span></span>
@@ -1438,6 +1438,7 @@
   const ownFeedList = document.getElementById('own-feed-list');
 
   let selectedMode = 'publico';
+  let editingPostId = null;
   let selectedRecipients = [];
   let ownPosts = [];
   let ownPostsShown = 0;
@@ -1871,7 +1872,11 @@
             </button>
           ` : ''}
           ${showDelete ? `
-            <button class="comment-btn delete-post-btn" data-post-id="${p.id}" style="margin-left:${showComment ? 'auto' : '0'};">
+            <button class="comment-btn edit-post-btn" data-post-id="${p.id}" style="margin-left:${showComment ? 'auto' : '0'};">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Editar
+            </button>
+            <button class="comment-btn delete-post-btn" data-post-id="${p.id}" style="margin-left:8px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"/></svg>
               Eliminar
             </button>
@@ -1947,6 +1952,15 @@
     });
   }
 
+  function wireEditButtons(container) {
+    container.querySelectorAll('.edit-post-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const post = ownPosts.find(p => p.id === btn.dataset.postId);
+        if (post) enterEditMode(post);
+      });
+    });
+  }
+
   function wireDeleteButtons(container) {
     container.querySelectorAll('.delete-post-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1986,6 +2000,7 @@
     const html = nextBatch.map(p => renderPostCardHTML(p, { showDelete: true })).join("");
     ownFeedList.insertAdjacentHTML('beforeend', html);
     wireDeleteButtons(ownFeedList);
+    wireEditButtons(ownFeedList);
     ownPostsShown += nextBatch.length;
     const loadMoreBtn = document.getElementById('own-feed-load-more');
     loadMoreBtn.style.display = ownPostsShown < ownPosts.length ? 'block' : 'none';
@@ -2001,13 +2016,14 @@
       return;
     }
     body.innerHTML = `<div class="spinner-row">Cargando tu galería…</div>`;
-    const posts = ownPosts.length ? ownPosts : await fetchOwnPosts(mine.id);
+    const posts = ownPosts.length ? ownPosts : (ownPosts = await fetchOwnPosts(mine.id));
     if (posts.length === 0) {
       body.innerHTML = `<div class="empty-state"><strong>Aún no has publicado nada</strong>Todo lo que compartas, en cualquier modo, quedará reunido aquí.</div>`;
       return;
     }
     body.innerHTML = posts.map(p => renderPostCardHTML(p, { showDelete: true })).join("");
     wireDeleteButtons(body);
+    wireEditButtons(body);
   }
   document.getElementById('gallery-close').addEventListener('click', () => galleryOverlay.classList.remove('open'));
   galleryOverlay.addEventListener('click', (e) => { if (e.target === galleryOverlay) galleryOverlay.classList.remove('open'); });
@@ -2757,6 +2773,65 @@
     document.getElementById('publish-cover-block').style.display = (type === 'texto' || type === 'audio') ? 'block' : 'none';
   }
 
+  function resetPublishFormFields() {
+    document.getElementById('publish-title').value = "";
+    document.getElementById('publish-description').value = "";
+    document.getElementById('publish-text').value = "";
+    selectedImages.forEach(img => { if (img.previewUrl) URL.revokeObjectURL(img.previewUrl); });
+    selectedImages = [];
+    renderSelectedImages();
+    document.getElementById('publish-pdf-remove').click();
+    document.getElementById('publish-audio-remove').click();
+    document.getElementById('publish-video-remove').click();
+    document.getElementById('publish-cover-remove').click();
+    switchContentType('texto');
+    selectedGroupIds = new Set();
+  }
+
+  function resetEditModeUI() {
+    editingPostId = null;
+    document.getElementById('publish-sheet-title').textContent = "Publicar";
+    document.getElementById('publish-submit').textContent = "Publicar";
+    document.getElementById('type-tabs').style.pointerEvents = '';
+    document.getElementById('type-tabs').style.opacity = '';
+    document.getElementById('mode-options').style.pointerEvents = '';
+    document.getElementById('mode-options').style.opacity = '';
+  }
+
+  function exitPublishSheet() {
+    if (editingPostId) resetPublishFormFields();
+    resetEditModeUI();
+  }
+  document.getElementById('sheet-close').addEventListener('click', exitPublishSheet);
+  publishOverlay.addEventListener('click', (e) => { if (e.target === publishOverlay) exitPublishSheet(); });
+  document.getElementById('btn-publish').addEventListener('click', () => { if (editingPostId) exitPublishSheet(); });
+
+  function enterEditMode(post) {
+    resetPublishFormFields();
+    editingPostId = post.id;
+    document.getElementById('publish-sheet-title').textContent = "Editar publicación";
+    document.getElementById('publish-submit').textContent = "Guardar cambios";
+    document.getElementById('publish-title').value = post.titulo || "";
+    document.getElementById('publish-description').value = post.descripcion || "";
+    switchContentType(post.tipo);
+    document.getElementById('type-tabs').style.pointerEvents = 'none';
+    document.getElementById('type-tabs').style.opacity = '0.5';
+    document.getElementById('mode-options').style.pointerEvents = 'none';
+    document.getElementById('mode-options').style.opacity = '0.5';
+    if (post.tipo === 'texto') {
+      document.getElementById('publish-text').value = post.texto || "";
+    }
+    if ((post.tipo === 'texto' || post.tipo === 'audio') && post.imagenUrl) {
+      showExistingCover(post.imagenUrl);
+    }
+    if (post.tipo === 'imagen') {
+      const source = (post.galeria && post.galeria.length > 0) ? post.galeria : (post.imagenUrl ? [{ url: post.imagenUrl, caption: '' }] : []);
+      selectedImages = source.map(img => ({ existingUrl: img.url, caption: img.caption || "" }));
+      renderSelectedImages();
+    }
+    publishOverlay.classList.add('open');
+  }
+
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => switchContentType(btn.dataset.type));
   });
@@ -3210,13 +3285,13 @@
     btn.disabled = false;
   });
 
-  let selectedImages = []; // { file, caption, previewUrl }
+  let selectedImages = []; // { file?, existingUrl?, caption, previewUrl }
 
   function renderSelectedImages() {
     const list = document.getElementById('publish-images-list');
     list.innerHTML = selectedImages.map((img, i) => `
       <div class="publish-image-item" data-index="${i}">
-        <img src="${img.previewUrl}">
+        <img src="${img.file ? img.previewUrl : img.existingUrl}">
         <input type="text" class="sheet-input publish-image-caption" placeholder="Descripción de esta imagen (opcional)" maxlength="140" value="${escapeHtml(img.caption).replace(/"/g, '&quot;')}" style="margin:0;">
         <button type="button" class="publish-image-remove" title="Quitar">✕</button>
       </div>
@@ -3227,7 +3302,7 @@
         selectedImages[i].caption = e.target.value;
       });
       item.querySelector('.publish-image-remove').addEventListener('click', () => {
-        URL.revokeObjectURL(selectedImages[i].previewUrl);
+        if (selectedImages[i].previewUrl) URL.revokeObjectURL(selectedImages[i].previewUrl);
         selectedImages.splice(i, 1);
         renderSelectedImages();
       });
@@ -3247,6 +3322,7 @@
   });
 
   let selectedCoverFile = null;
+  let coverExistingUrl = null;
 
   document.getElementById('publish-cover-btn').addEventListener('click', () => {
     document.getElementById('publish-cover-input').click();
@@ -3255,16 +3331,25 @@
     const file = e.target.files[0];
     if (!file) return;
     selectedCoverFile = file;
+    coverExistingUrl = null;
     document.getElementById('publish-cover-img').src = URL.createObjectURL(file);
     document.getElementById('publish-cover-preview').style.display = 'block';
     document.getElementById('publish-cover-row').style.display = 'none';
   });
   document.getElementById('publish-cover-remove').addEventListener('click', () => {
     selectedCoverFile = null;
+    coverExistingUrl = null;
     document.getElementById('publish-cover-input').value = "";
     document.getElementById('publish-cover-preview').style.display = 'none';
     document.getElementById('publish-cover-row').style.display = 'block';
   });
+  function showExistingCover(url) {
+    selectedCoverFile = null;
+    coverExistingUrl = url;
+    document.getElementById('publish-cover-img').src = url;
+    document.getElementById('publish-cover-preview').style.display = 'block';
+    document.getElementById('publish-cover-row').style.display = 'none';
+  }
 
   document.getElementById('publish-submit').addEventListener('click', async () => {
     const titulo = document.getElementById('publish-title').value.trim();
@@ -3278,12 +3363,12 @@
       errorEl.classList.add('show');
       return;
     }
-    if (selectedContentType === 'audio' && !selectedAudioFile) {
+    if (!editingPostId && selectedContentType === 'audio' && !selectedAudioFile) {
       errorEl.textContent = "Adjunta un audio antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
-    if (selectedContentType === 'video' && !selectedVideoFile) {
+    if (!editingPostId && selectedContentType === 'video' && !selectedVideoFile) {
       errorEl.textContent = "Adjunta un video antes de publicar.";
       errorEl.classList.add('show');
       return;
@@ -3295,14 +3380,14 @@
     }
     let autorizados = [];
     let grupoNombre = null;
-    if (selectedMode === 'selectivo') {
+    if (!editingPostId && selectedMode === 'selectivo') {
       autorizados = Array.from(document.querySelectorAll('#followers-list input:checked')).map(i => i.value);
       if (autorizados.length === 0) {
         errorEl.textContent = "Elige al menos una persona para este modo.";
         errorEl.classList.add('show');
         return;
       }
-    } else if (selectedMode === 'grupal') {
+    } else if (!editingPostId && selectedMode === 'grupal') {
       if (selectedGroupIds.size === 0) {
         errorEl.textContent = "Elige al menos un grupo, o crea uno nuevo.";
         errorEl.classList.add('show');
@@ -3330,10 +3415,14 @@
       if (selectedContentType === 'imagen' && selectedImages.length > 0) {
         const uploaded = [];
         for (let i = 0; i < selectedImages.length; i++) {
-          btn.textContent = `Comprimiendo imagen ${i + 1} de ${selectedImages.length}…`;
-          const blob = await compressImage(selectedImages[i].file);
-          const url = await uploadPostImage(blob, mine.id, onProgress(`Subiendo imagen ${i + 1} de ${selectedImages.length}`));
-          uploaded.push({ url, caption: selectedImages[i].caption.trim() });
+          if (selectedImages[i].file) {
+            btn.textContent = `Comprimiendo imagen ${i + 1} de ${selectedImages.length}…`;
+            const blob = await compressImage(selectedImages[i].file);
+            const url = await uploadPostImage(blob, mine.id, onProgress(`Subiendo imagen ${i + 1} de ${selectedImages.length}`));
+            uploaded.push({ url, caption: selectedImages[i].caption.trim() });
+          } else {
+            uploaded.push({ url: selectedImages[i].existingUrl, caption: selectedImages[i].caption.trim() });
+          }
         }
         urls.imagenUrl = uploaded[0].url;
         if (uploaded.length > 1 || uploaded[0].caption) {
@@ -3349,25 +3438,33 @@
       if (selectedContentType === 'video' && selectedVideoFile) {
         urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video', onProgress("Subiendo video"));
       }
-      if ((selectedContentType === 'texto' || selectedContentType === 'audio') && selectedCoverFile) {
-        btn.textContent = "Comprimiendo imagen…";
-        const coverBlob = await compressImage(selectedCoverFile);
-        urls.imagenUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
+      if (selectedContentType === 'texto' || selectedContentType === 'audio') {
+        if (selectedCoverFile) {
+          btn.textContent = "Comprimiendo imagen…";
+          const coverBlob = await compressImage(selectedCoverFile);
+          urls.imagenUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
+        } else if (coverExistingUrl) {
+          urls.imagenUrl = coverExistingUrl;
+        } else if (editingPostId) {
+          urls.imagenUrl = null;
+        }
       }
-      btn.textContent = "Publicando…";
-      await createPost(selectedContentType, titulo, descripcion, texto, selectedMode, autorizados, grupoNombre, urls);
-      document.getElementById('publish-title').value = "";
-      document.getElementById('publish-description').value = "";
-      document.getElementById('publish-text').value = "";
-      selectedImages.forEach(img => URL.revokeObjectURL(img.previewUrl));
-      selectedImages = [];
-      renderSelectedImages();
-      document.getElementById('publish-pdf-remove').click();
-      document.getElementById('publish-audio-remove').click();
-      document.getElementById('publish-video-remove').click();
-      document.getElementById('publish-cover-remove').click();
-      switchContentType('texto');
-      selectedGroupIds = new Set();
+      btn.textContent = editingPostId ? "Guardando…" : "Publicando…";
+      if (editingPostId) {
+        const updates = { titulo: titulo || null, descripcion: descripcion || null };
+        if (selectedContentType === 'texto') updates.texto = texto;
+        if (selectedContentType === 'imagen') {
+          updates.imagenUrl = urls.imagenUrl;
+          updates.galeria = urls.galeria || null;
+        } else if (selectedContentType === 'texto' || selectedContentType === 'audio') {
+          updates.imagenUrl = urls.imagenUrl ?? null;
+        }
+        await updateDoc(doc(db, "publicaciones", editingPostId), updates);
+      } else {
+        await createPost(selectedContentType, titulo, descripcion, texto, selectedMode, autorizados, grupoNombre, urls);
+      }
+      resetPublishFormFields();
+      resetEditModeUI();
       publishOverlay.classList.remove('open');
       await renderProfileList();
       await renderOwnFeed();
