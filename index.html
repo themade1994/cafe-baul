@@ -693,6 +693,40 @@
     background-size: cover; background-position: center;
     background-color: var(--bg-elevated); border: 1px solid var(--line);
   }
+  .publish-image-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px;
+  }
+  .publish-image-item img {
+    width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-s);
+    flex-shrink: 0; background: #000;
+  }
+  .publish-image-item .publish-image-caption {
+    flex: 1; min-width: 0;
+  }
+  .publish-image-item .publish-image-remove {
+    background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  }
+  .post-gallery { position: relative; margin-top: 8px; }
+  .post-gallery img {
+    width: 100%; max-height: 70vh; object-fit: contain;
+    border-radius: var(--radius-s); display: block; background: #000;
+  }
+  .post-gallery-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.55); color: #fff; border: none;
+    width: 34px; height: 34px; border-radius: 50%; font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .post-gallery-prev { left: 8px; }
+  .post-gallery-next { right: 8px; }
+  .post-gallery-counter {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.6); color: #fff; font-size: 0.72rem;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .post-gallery-caption { font-size: 0.82rem; color: var(--ink-muted); margin-top: 6px; }
 
   .post-card {
     border-bottom: 1px solid var(--line);
@@ -1162,14 +1196,9 @@
 
     <!-- Imagen -->
     <div id="publish-image-block" style="display:none;">
-      <input type="file" id="publish-photo-input" accept="image/*" style="display:none;">
-      <div id="publish-photo-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%;">+ Adjuntar foto</button>
-      </div>
-      <div id="publish-photo-preview" style="display:none; margin-bottom:16px; position:relative;">
-        <img id="publish-photo-img" style="width:100%; max-height:320px; object-fit:contain; border-radius:var(--radius-s); display:block; background:#000;">
-        <button type="button" class="copy-btn" id="publish-photo-remove" style="width:100%; margin-top:8px;">Quitar foto</button>
-      </div>
+      <input type="file" id="publish-photo-input" accept="image/*" multiple style="display:none;">
+      <div id="publish-images-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
+      <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%; margin-bottom:16px;">+ Añadir imagen</button>
     </div>
     <!-- Imagen de referencia (solo para texto y audio, que no tienen imagen propia) -->
     <div id="publish-cover-block" style="display:none;">
@@ -1730,6 +1759,7 @@
       descripcion: descripcion || null,
       texto,
       imagenUrl: urls.imagenUrl || null,
+      galeria: urls.galeria || null,
       pdfUrl: urls.pdfUrl || null,
       audioUrl: urls.audioUrl || null,
       videoUrl: urls.videoUrl || null,
@@ -1775,6 +1805,46 @@
     document.querySelectorAll(`[data-remove-post="${postId}"]`).forEach(el => el.remove());
   }
 
+  // Estado en memoria de qué imagen se está mostrando en cada galería (por post).
+  const galleryState = {};
+
+  function renderImageGalleryHTML(p) {
+    const images = (p.galeria && p.galeria.length > 0) ? p.galeria : (p.imagenUrl ? [{ url: p.imagenUrl, caption: "" }] : []);
+    if (images.length === 0) return '';
+    galleryState[p.id] = { images, index: 0 };
+    const img = images[0];
+    return `
+      <div class="post-gallery" data-gallery-id="${p.id}">
+        <img class="post-gallery-img" src="${img.url}">
+        ${images.length > 1 ? `
+          <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹</button>
+          <button type="button" class="post-gallery-nav post-gallery-next">›</button>
+          <div class="post-gallery-counter">1 / ${images.length}</div>
+        ` : ''}
+        <div class="post-gallery-caption" style="${img.caption ? '' : 'display:none;'}">${escapeHtml(img.caption)}</div>
+      </div>
+    `;
+  }
+
+  // Delegación global: funciona sin importar dónde se haya renderizado la galería (feed, galería propia, etc.)
+  document.addEventListener('click', (e) => {
+    const navBtn = e.target.closest('.post-gallery-nav');
+    if (!navBtn) return;
+    const container = navBtn.closest('.post-gallery');
+    const state = galleryState[container.dataset.galleryId];
+    if (!state) return;
+    state.index += navBtn.classList.contains('post-gallery-next') ? 1 : -1;
+    state.index = Math.max(0, Math.min(state.images.length - 1, state.index));
+    const current = state.images[state.index];
+    container.querySelector('.post-gallery-img').src = current.url;
+    const captionEl = container.querySelector('.post-gallery-caption');
+    captionEl.textContent = current.caption || "";
+    captionEl.style.display = current.caption ? '' : 'none';
+    container.querySelector('.post-gallery-counter').textContent = `${state.index + 1} / ${state.images.length}`;
+    container.querySelector('.post-gallery-prev').style.display = state.index === 0 ? 'none' : 'flex';
+    container.querySelector('.post-gallery-next').style.display = state.index === state.images.length - 1 ? 'none' : 'flex';
+  });
+
   function renderPostCardHTML(p, opts = {}) {
     const { showComment = false, showDelete = false, authorId = "" } = opts;
     return `
@@ -1788,9 +1858,9 @@
         ${(p.tipo === 'texto' || p.tipo === 'audio') && p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; max-height:260px; object-fit:cover; border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
         ${p.descripcion ? `<p class="post-description">${escapeHtml(p.descripcion)}</p>` : ''}
         ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
-        ${p.imagenUrl && p.tipo !== 'texto' && p.tipo !== 'audio' ? `<img src="${p.imagenUrl}" style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;">` : ''}
+        ${p.tipo !== 'texto' && p.tipo !== 'audio' ? renderImageGalleryHTML(p) : ''}
         ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="width:100%; margin-top:8px; display:block;"></audio>` : ''}
-        ${p.videoUrl ? `<video src="${p.videoUrl}" ${p.videoThumbUrl ? `poster="${p.videoThumbUrl}"` : ''} controls style="width:100%; border-radius:var(--radius-s); margin-top:8px; display:block;"></video>` : ''}
+        ${p.videoUrl ? `<video src="${p.videoUrl}" ${p.videoThumbUrl ? `poster="${p.videoThumbUrl}"` : ''} controls style="width:100%; max-height:70vh; object-fit:contain; border-radius:var(--radius-s); margin-top:8px; display:block; background:#000;"></video>` : ''}
         ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
         <div class="post-time">${timeAgo(p.creado)}</div>
         <div class="post-actions">
@@ -3140,24 +3210,40 @@
     btn.disabled = false;
   });
 
-  let selectedPhotoFile = null;
+  let selectedImages = []; // { file, caption, previewUrl }
+
+  function renderSelectedImages() {
+    const list = document.getElementById('publish-images-list');
+    list.innerHTML = selectedImages.map((img, i) => `
+      <div class="publish-image-item" data-index="${i}">
+        <img src="${img.previewUrl}">
+        <input type="text" class="sheet-input publish-image-caption" placeholder="Descripción de esta imagen (opcional)" maxlength="140" value="${escapeHtml(img.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+        <button type="button" class="publish-image-remove" title="Quitar">✕</button>
+      </div>
+    `).join("");
+    list.querySelectorAll('.publish-image-item').forEach(item => {
+      const i = parseInt(item.dataset.index, 10);
+      item.querySelector('.publish-image-caption').addEventListener('input', (e) => {
+        selectedImages[i].caption = e.target.value;
+      });
+      item.querySelector('.publish-image-remove').addEventListener('click', () => {
+        URL.revokeObjectURL(selectedImages[i].previewUrl);
+        selectedImages.splice(i, 1);
+        renderSelectedImages();
+      });
+    });
+  }
 
   document.getElementById('publish-photo-btn').addEventListener('click', () => {
     document.getElementById('publish-photo-input').click();
   });
   document.getElementById('publish-photo-input').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    selectedPhotoFile = file;
-    document.getElementById('publish-photo-img').src = URL.createObjectURL(file);
-    document.getElementById('publish-photo-preview').style.display = 'block';
-    document.getElementById('publish-photo-row').style.display = 'none';
-  });
-  document.getElementById('publish-photo-remove').addEventListener('click', () => {
-    selectedPhotoFile = null;
-    document.getElementById('publish-photo-input').value = "";
-    document.getElementById('publish-photo-preview').style.display = 'none';
-    document.getElementById('publish-photo-row').style.display = 'block';
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      selectedImages.push({ file, caption: "", previewUrl: URL.createObjectURL(file) });
+    });
+    e.target.value = "";
+    renderSelectedImages();
   });
 
   let selectedCoverFile = null;
@@ -3202,8 +3288,8 @@
       errorEl.classList.add('show');
       return;
     }
-    if (selectedContentType === 'imagen' && !selectedPhotoFile) {
-      errorEl.textContent = "Adjunta una foto antes de publicar.";
+    if (selectedContentType === 'imagen' && selectedImages.length === 0) {
+      errorEl.textContent = "Adjunta al menos una foto antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
@@ -3241,10 +3327,18 @@
       const mine = getMyProfile();
       const urls = {};
       const onProgress = (label) => (pct) => { btn.textContent = `${label}… ${pct}%`; };
-      if (selectedContentType === 'imagen' && selectedPhotoFile) {
-        btn.textContent = "Comprimiendo foto…";
-        const blob = await compressImage(selectedPhotoFile);
-        urls.imagenUrl = await uploadPostImage(blob, mine.id, onProgress("Subiendo foto"));
+      if (selectedContentType === 'imagen' && selectedImages.length > 0) {
+        const uploaded = [];
+        for (let i = 0; i < selectedImages.length; i++) {
+          btn.textContent = `Comprimiendo imagen ${i + 1} de ${selectedImages.length}…`;
+          const blob = await compressImage(selectedImages[i].file);
+          const url = await uploadPostImage(blob, mine.id, onProgress(`Subiendo imagen ${i + 1} de ${selectedImages.length}`));
+          uploaded.push({ url, caption: selectedImages[i].caption.trim() });
+        }
+        urls.imagenUrl = uploaded[0].url;
+        if (uploaded.length > 1 || uploaded[0].caption) {
+          urls.galeria = uploaded;
+        }
       }
       if (selectedContentType === 'texto' && selectedPdfFile) {
         urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf', onProgress("Subiendo PDF"));
@@ -3265,7 +3359,9 @@
       document.getElementById('publish-title').value = "";
       document.getElementById('publish-description').value = "";
       document.getElementById('publish-text').value = "";
-      document.getElementById('publish-photo-remove').click();
+      selectedImages.forEach(img => URL.revokeObjectURL(img.previewUrl));
+      selectedImages = [];
+      renderSelectedImages();
       document.getElementById('publish-pdf-remove').click();
       document.getElementById('publish-audio-remove').click();
       document.getElementById('publish-video-remove').click();
