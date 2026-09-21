@@ -741,6 +741,16 @@
     background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
     cursor: pointer; padding: 0 4px; flex-shrink: 0;
   }
+  .publish-pdf-item {
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px;
+  }
+  .publish-pdf-item .publish-pdf-item-row { display: flex; gap: 10px; align-items: center; }
+  .publish-pdf-item .publish-pdf-caption { flex: 1; min-width: 0; margin: 0; }
+  .publish-pdf-item .publish-pdf-remove {
+    background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  }
   .post-gallery { position: relative; margin-top: 8px; touch-action: pan-y; }
   .post-gallery img {
     width: 100%; max-height: 70vh; object-fit: contain;
@@ -1154,6 +1164,20 @@
     <input class="sheet-input" id="publish-title" type="text" placeholder="Un título para esta publicación" maxlength="80" style="margin-bottom:18px;">
     <label class="field-label" for="publish-description">Descripción (opcional)</label>
     <textarea class="sheet-textarea sheet-textarea-small" id="publish-description" placeholder="Una breve descripción o contexto, aparte del contenido en sí"></textarea>
+    <!-- Imagen de referencia / portada de la publicación (para todos los tipos) -->
+    <div id="publish-cover-block" style="display:none;">
+      <input type="file" id="publish-cover-input" accept="image/*" style="display:none;">
+      <div id="publish-cover-row" style="margin-bottom:16px;">
+        <button type="button" class="copy-btn" id="publish-cover-btn" style="width:100%;">+ Imagen de referencia (opcional)</button>
+      </div>
+      <div id="publish-cover-preview" style="display:none; margin-bottom:16px;">
+        <div id="publish-cover-box" style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-s); background:var(--bg-elevated); background-repeat:no-repeat; border:1px solid var(--line);"></div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button type="button" class="copy-btn" id="publish-cover-adjust-btn" style="flex:1;">Ajustar recorte</button>
+          <button type="button" class="copy-btn" id="publish-cover-remove" style="flex:1;">Quitar imagen</button>
+        </div>
+      </div>
+    </div>
     <div class="type-tabs" id="type-tabs">
       <button type="button" class="type-btn selected" data-type="texto">Texto</button>
       <button type="button" class="type-btn" data-type="audio">Audio</button>
@@ -1207,14 +1231,9 @@
 
     <!-- PDF -->
     <div id="publish-pdf-block" style="display:none;">
-      <input type="file" id="publish-pdf-input" accept="application/pdf" style="display:none;">
-      <div id="publish-pdf-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-pdf-btn" style="width:100%;">+ Adjuntar PDF (máx. 50MB)</button>
-      </div>
-      <div id="publish-pdf-preview" class="file-preview-name" style="display:none; margin-bottom:16px;">
-        <span id="publish-pdf-name"></span>
-        <button type="button" class="copy-btn" id="publish-pdf-remove">Quitar</button>
-      </div>
+      <input type="file" id="publish-pdf-input" accept="application/pdf" multiple style="display:none;">
+      <div id="publish-pdfs-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
+      <button type="button" class="copy-btn" id="publish-pdf-btn" style="width:100%;">+ Añadir PDF (máx. 50MB c/u)</button>
     </div>
 
     <!-- Audio -->
@@ -1236,20 +1255,6 @@
       <input type="file" id="publish-photo-input" accept="image/*" multiple style="display:none;">
       <div id="publish-images-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
       <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%; margin-bottom:16px;">+ Añadir imagen</button>
-    </div>
-    <!-- Imagen de referencia / portada de la publicación (para todos los tipos) -->
-    <div id="publish-cover-block" style="display:none;">
-      <input type="file" id="publish-cover-input" accept="image/*" style="display:none;">
-      <div id="publish-cover-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-cover-btn" style="width:100%;">+ Imagen de referencia (opcional)</button>
-      </div>
-      <div id="publish-cover-preview" style="display:none; margin-bottom:16px;">
-        <div id="publish-cover-box" style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-s); background:var(--bg-elevated); background-repeat:no-repeat; border:1px solid var(--line);"></div>
-        <div style="display:flex; gap:10px; margin-top:8px;">
-          <button type="button" class="copy-btn" id="publish-cover-adjust-btn" style="flex:1;">Ajustar recorte</button>
-          <button type="button" class="copy-btn" id="publish-cover-remove" style="flex:1;">Quitar imagen</button>
-        </div>
-      </div>
     </div>
     <input type="file" id="item-cover-input" accept="image/*" style="display:none;">
 
@@ -1828,6 +1833,7 @@
       portadaUrl: urls.portadaUrl || null,
       galeria: urls.galeria || null,
       pdfUrl: urls.pdfUrl || null,
+      galeriaPdf: urls.galeriaPdf || null,
       audioUrl: urls.audioUrl || null,
       galeriaAudio: urls.galeriaAudio || null,
       videoUrl: urls.videoUrl || null,
@@ -1959,6 +1965,28 @@
     `;
   }
 
+  function renderPdfGalleryHTML(p) {
+    const items = (p.galeriaPdf && p.galeriaPdf.length > 0) ? p.galeriaPdf : (p.pdfUrl ? [{ url: p.pdfUrl, titulo: "", caption: "", imagenUrl: null }] : []);
+    if (items.length === 0) return '';
+    galleryState[p.id] = { kind: 'pdf', items, index: 0 };
+    const it = items[0];
+    return `
+      <div class="post-gallery post-pdf-gallery" data-gallery-id="${p.id}">
+        <img class="post-gallery-item-image" src="${it.imagenUrl || ''}" style="width:100%; max-height:260px; object-fit:contain; background:var(--bg-elevated); border-radius:var(--radius-s); margin-bottom:10px; display:${it.imagenUrl ? 'block' : 'none'};">
+        <div class="post-gallery-title" style="${it.titulo ? '' : 'display:none;'}">${escapeHtml(it.titulo || '')}</div>
+        <a class="post-gallery-pdf-link copy-btn" href="${it.url}" target="_blank" rel="noopener" style="display:block; text-align:center; text-decoration:none;">Ver PDF</a>
+        ${items.length > 1 ? `
+          <div class="post-gallery-nav-row">
+            <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹ Anterior</button>
+            <div class="post-gallery-counter">1 / ${items.length}</div>
+            <button type="button" class="post-gallery-nav post-gallery-next">Siguiente ›</button>
+          </div>
+        ` : ''}
+        <div class="post-gallery-caption" style="${it.caption ? '' : 'display:none;'}">${escapeHtml(it.caption)}</div>
+      </div>
+    `;
+  }
+
   // Delegación global: funciona sin importar dónde se haya renderizado la galería (feed, galería propia, etc.)
   function navigateGallery(container, delta) {
     const state = galleryState[container.dataset.galleryId];
@@ -1979,6 +2007,8 @@
       if (thumb) videoEl.poster = thumb; else videoEl.removeAttribute('poster');
     } else if (state.kind === 'text') {
       container.querySelector('.post-gallery-text').textContent = current.texto;
+    } else if (state.kind === 'pdf') {
+      container.querySelector('.post-gallery-pdf-link').href = current.url;
     } else {
       container.querySelector('.post-gallery-img').src = current.url;
     }
@@ -2013,7 +2043,7 @@
   let gallerySwipe = null;
   document.addEventListener('touchstart', (e) => {
     const container = e.target.closest('.post-gallery');
-    if (!container || container.classList.contains('post-text-gallery') || !galleryState[container.dataset.galleryId]) return;
+    if (!container || container.classList.contains('post-text-gallery') || container.classList.contains('post-pdf-gallery') || !galleryState[container.dataset.galleryId]) return;
     const t = e.touches[0];
     gallerySwipe = { container, startX: t.clientX, startY: t.clientY };
   }, { passive: true });
@@ -2048,7 +2078,7 @@
         ${p.tipo === 'imagen' ? renderImageGalleryHTML(p) : ''}
         ${p.tipo === 'audio' ? renderAudioGalleryHTML(p) : ''}
         ${p.tipo === 'video' ? renderVideoGalleryHTML(p) : ''}
-        ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
+        ${p.tipo === 'pdf' ? renderPdfGalleryHTML(p) : ''}
         <div class="post-time">${timeAgo(p.creado)}</div>
         <div class="post-actions">
           ${showComment ? `
@@ -2935,24 +2965,28 @@
 
   function renderTextFragments() {
     const list = document.getElementById('publish-text-fragments-list');
+    const multi = selectedTextFragments.length > 1;
     list.innerHTML = selectedTextFragments.map((f, i) => `
       <div class="publish-text-fragment-item" data-index="${i}">
-        ${selectedTextFragments.length > 1 ? `
+        ${multi ? `
           <div class="publish-text-fragment-head">
             <span>Fragmento ${i + 1} de ${selectedTextFragments.length}</span>
             <button type="button" class="publish-text-fragment-remove" title="Quitar este fragmento">✕</button>
           </div>
+          <input type="text" class="sheet-input publish-text-fragment-title" placeholder="Título de este fragmento (opcional)" maxlength="80" value="${escapeHtml(f.titulo).replace(/"/g, '&quot;')}" style="margin:0;">
         ` : ''}
-        <input type="text" class="sheet-input publish-text-fragment-title" placeholder="Título de este fragmento (opcional)" maxlength="80" value="${escapeHtml(f.titulo).replace(/"/g, '&quot;')}" style="margin:0;">
         <textarea class="sheet-textarea sheet-textarea-writing publish-text-fragment-input" placeholder="Este es tu espacio para explayarte: tu meditación, tu relato, tu texto largo…">${escapeHtml(f.texto)}</textarea>
-        ${itemCoverPickerHTML(f)}
+        ${multi ? itemCoverPickerHTML(f) : ''}
       </div>
     `).join("");
     list.querySelectorAll('.publish-text-fragment-item').forEach(item => {
       const i = parseInt(item.dataset.index, 10);
-      item.querySelector('.publish-text-fragment-title').addEventListener('input', (e) => {
-        selectedTextFragments[i].titulo = e.target.value;
-      });
+      const titleInput = item.querySelector('.publish-text-fragment-title');
+      if (titleInput) {
+        titleInput.addEventListener('input', (e) => {
+          selectedTextFragments[i].titulo = e.target.value;
+        });
+      }
       item.querySelector('.publish-text-fragment-input').addEventListener('input', (e) => {
         selectedTextFragments[i].texto = e.target.value;
       });
@@ -2963,7 +2997,7 @@
           renderTextFragments();
         });
       }
-      wireItemCoverPicker(item, 'text', i, selectedTextFragments[i], renderTextFragments);
+      if (multi) wireItemCoverPicker(item, 'text', i, selectedTextFragments[i], renderTextFragments);
     });
   }
   document.getElementById('publish-text-fragment-btn').addEventListener('click', () => {
@@ -2977,31 +3011,30 @@
 
   function renderSelectedAudios() {
     const list = document.getElementById('publish-audios-list');
+    const multiAudio = selectedAudios.length > 1;
     list.innerHTML = selectedAudios.map((a, i) => `
       <div class="publish-audio-item" data-index="${i}">
         <audio controls src="${a.file ? a.previewUrl : a.existingUrl}"></audio>
-        <input type="text" class="sheet-input publish-audio-title" placeholder="Título de este audio (opcional)" maxlength="80" value="${escapeHtml(a.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">
+        ${multiAudio ? `<input type="text" class="sheet-input publish-audio-title" placeholder="Título de este audio (opcional)" maxlength="80" value="${escapeHtml(a.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">` : ''}
         <div class="publish-audio-item-row">
-          <input type="text" class="sheet-input publish-audio-caption" placeholder="Descripción de este audio (opcional)" maxlength="140" value="${escapeHtml(a.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+          ${multiAudio ? `<input type="text" class="sheet-input publish-audio-caption" placeholder="Descripción de este audio (opcional)" maxlength="140" value="${escapeHtml(a.caption).replace(/"/g, '&quot;')}" style="margin:0;">` : ''}
           <button type="button" class="publish-audio-remove" title="Quitar">✕</button>
         </div>
-        ${itemCoverPickerHTML(a)}
+        ${multiAudio ? itemCoverPickerHTML(a) : ''}
       </div>
     `).join("");
     list.querySelectorAll('.publish-audio-item').forEach(item => {
       const i = parseInt(item.dataset.index, 10);
-      item.querySelector('.publish-audio-title').addEventListener('input', (e) => {
-        selectedAudios[i].titulo = e.target.value;
-      });
-      item.querySelector('.publish-audio-caption').addEventListener('input', (e) => {
-        selectedAudios[i].caption = e.target.value;
-      });
+      const titleInput = item.querySelector('.publish-audio-title');
+      if (titleInput) titleInput.addEventListener('input', (e) => { selectedAudios[i].titulo = e.target.value; });
+      const captionInput = item.querySelector('.publish-audio-caption');
+      if (captionInput) captionInput.addEventListener('input', (e) => { selectedAudios[i].caption = e.target.value; });
       item.querySelector('.publish-audio-remove').addEventListener('click', () => {
         if (selectedAudios[i].previewUrl) URL.revokeObjectURL(selectedAudios[i].previewUrl);
         selectedAudios.splice(i, 1);
         renderSelectedAudios();
       });
-      wireItemCoverPicker(item, 'audio', i, selectedAudios[i], renderSelectedAudios);
+      if (multiAudio) wireItemCoverPicker(item, 'audio', i, selectedAudios[i], renderSelectedAudios);
     });
   }
   let selectedVideos = []; // { file?, existingUrl?, titulo, caption, previewUrl }
@@ -3077,7 +3110,9 @@
     selectedVideos.forEach(v => { if (v.previewUrl) URL.revokeObjectURL(v.previewUrl); });
     selectedVideos = [];
     renderSelectedVideos();
-    document.getElementById('publish-pdf-remove').click();
+    selectedPdfs.forEach(p => { if (p.imgPreviewUrl) URL.revokeObjectURL(p.imgPreviewUrl); });
+    selectedPdfs = [];
+    renderSelectedPdfs();
     document.getElementById('publish-cover-remove').click();
     switchContentType('texto');
     selectedGroupIds = new Set();
@@ -3094,6 +3129,7 @@
   function exitPublishSheet() {
     if (editingPostId) resetPublishFormFields();
     resetEditModeUI();
+    publishOverlay.classList.remove('open');
   }
   document.getElementById('sheet-close').addEventListener('click', exitPublishSheet);
   publishOverlay.addEventListener('click', (e) => { if (e.target === publishOverlay) exitPublishSheet(); });
@@ -3129,8 +3165,10 @@
     if ((post.tipo === 'imagen' || post.tipo === 'video') && post.portadaUrl) {
       showExistingCover(post.portadaUrl);
     }
-    if (post.tipo === 'pdf' && post.pdfUrl) {
-      showExistingPdf(post.pdfUrl, "PDF ya adjunto");
+    if (post.tipo === 'pdf') {
+      const source = (post.galeriaPdf && post.galeriaPdf.length > 0) ? post.galeriaPdf : (post.pdfUrl ? [{ url: post.pdfUrl, titulo: '', caption: '' }] : []);
+      selectedPdfs = source.map(p => ({ existingUrl: p.url, titulo: p.titulo || "", caption: p.caption || "", name: pdfNameFromUrl(p.url), imgExistingUrl: p.imagenUrl || null }));
+      renderSelectedPdfs();
     }
     if (post.tipo === 'imagen') {
       const source = (post.galeria && post.galeria.length > 0) ? post.galeria : (post.imagenUrl ? [{ url: post.imagenUrl, caption: '' }] : []);
@@ -3154,41 +3192,62 @@
     btn.addEventListener('click', () => switchContentType(btn.dataset.type));
   });
 
-  let selectedPdfFile = null;
-  let existingPdfUrl = null;
+  function pdfNameFromUrl(url) {
+    try {
+      const clean = url.split('?')[0];
+      const last = clean.substring(clean.lastIndexOf('/') + 1);
+      return decodeURIComponent(last) || "PDF ya adjunto";
+    } catch {
+      return "PDF ya adjunto";
+    }
+  }
 
-  function showExistingPdf(url, name) {
-    selectedPdfFile = null;
-    existingPdfUrl = url;
-    document.getElementById('publish-pdf-name').textContent = name || "PDF ya adjunto";
-    document.getElementById('publish-pdf-preview').style.display = 'flex';
-    document.getElementById('publish-pdf-row').style.display = 'none';
+  let selectedPdfs = []; // { file?, existingUrl?, titulo, caption, name, imgFile?, imgExistingUrl?, imgPreviewUrl?, imgCropRect?, imgNatW?, imgNatH? }
+
+  function renderSelectedPdfs() {
+    const list = document.getElementById('publish-pdfs-list');
+    const multiPdf = selectedPdfs.length > 1;
+    list.innerHTML = selectedPdfs.map((p, i) => `
+      <div class="publish-pdf-item" data-index="${i}">
+        <span class="file-preview-name" style="display:flex;"><span>${escapeHtml(p.name)}</span></span>
+        ${multiPdf ? `<input type="text" class="sheet-input publish-pdf-title" placeholder="Título de este PDF (opcional)" maxlength="80" value="${escapeHtml(p.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">` : ''}
+        <div class="publish-pdf-item-row">
+          ${multiPdf ? `<input type="text" class="sheet-input publish-pdf-caption" placeholder="Descripción de este PDF (opcional)" maxlength="140" value="${escapeHtml(p.caption).replace(/"/g, '&quot;')}" style="margin:0;">` : ''}
+          <button type="button" class="publish-pdf-remove" title="Quitar">✕</button>
+        </div>
+        ${multiPdf ? itemCoverPickerHTML(p) : ''}
+      </div>
+    `).join("");
+    list.querySelectorAll('.publish-pdf-item').forEach(item => {
+      const i = parseInt(item.dataset.index, 10);
+      const titleInput = item.querySelector('.publish-pdf-title');
+      if (titleInput) titleInput.addEventListener('input', (e) => { selectedPdfs[i].titulo = e.target.value; });
+      const captionInput = item.querySelector('.publish-pdf-caption');
+      if (captionInput) captionInput.addEventListener('input', (e) => { selectedPdfs[i].caption = e.target.value; });
+      item.querySelector('.publish-pdf-remove').addEventListener('click', () => {
+        if (selectedPdfs[i].imgPreviewUrl) URL.revokeObjectURL(selectedPdfs[i].imgPreviewUrl);
+        selectedPdfs.splice(i, 1);
+        renderSelectedPdfs();
+      });
+      if (multiPdf) wireItemCoverPicker(item, 'pdf', i, selectedPdfs[i], renderSelectedPdfs);
+    });
   }
 
   document.getElementById('publish-pdf-btn').addEventListener('click', () => document.getElementById('publish-pdf-input').click());
   document.getElementById('publish-pdf-input').addEventListener('change', (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files || []);
     const errorEl = document.getElementById('publish-error');
     errorEl.classList.remove('show');
-    if (!file) return;
-    if (file.size > FILE_MAX_BYTES) {
-      errorEl.textContent = "El PDF pesa más de 50MB.";
-      errorEl.classList.add('show');
-      e.target.value = "";
-      return;
+    for (const file of files) {
+      if (file.size > FILE_MAX_BYTES) {
+        errorEl.textContent = `"${file.name}" pesa más de 50MB y no se agregó.`;
+        errorEl.classList.add('show');
+        continue;
+      }
+      selectedPdfs.push({ file, titulo: "", caption: "", name: file.name });
     }
-    selectedPdfFile = file;
-    existingPdfUrl = null;
-    document.getElementById('publish-pdf-name').textContent = file.name;
-    document.getElementById('publish-pdf-preview').style.display = 'flex';
-    document.getElementById('publish-pdf-row').style.display = 'none';
-  });
-  document.getElementById('publish-pdf-remove').addEventListener('click', () => {
-    selectedPdfFile = null;
-    existingPdfUrl = null;
-    document.getElementById('publish-pdf-input').value = "";
-    document.getElementById('publish-pdf-preview').style.display = 'none';
-    document.getElementById('publish-pdf-row').style.display = 'block';
+    e.target.value = "";
+    renderSelectedPdfs();
   });
 
   document.getElementById('publish-audio-btn').addEventListener('click', () => document.getElementById('publish-audio-input').click());
@@ -3819,15 +3878,25 @@
 
   // ---------- Imagen de referencia por recurso (audio y texto) ----------
 
-  let itemCoverPendingTarget = null; // { kind: 'audio' | 'text', index }
+  let itemCoverPendingTarget = null; // { kind: 'audio' | 'text' | 'pdf', index }
+
+  function arrForKind(kind) {
+    if (kind === 'audio') return selectedAudios;
+    if (kind === 'pdf') return selectedPdfs;
+    return selectedTextFragments;
+  }
+  function rerenderForKind(kind) {
+    if (kind === 'audio') return renderSelectedAudios();
+    if (kind === 'pdf') return renderSelectedPdfs();
+    return renderTextFragments();
+  }
 
   document.getElementById('item-cover-input').addEventListener('change', (e) => {
     const file = e.target.files[0];
     e.target.value = "";
     if (!file || !itemCoverPendingTarget) return;
     const { kind, index } = itemCoverPendingTarget;
-    const arr = kind === 'audio' ? selectedAudios : selectedTextFragments;
-    const item = arr[index];
+    const item = arrForKind(kind)[index];
     if (!item) return;
     const previewUrl = URL.createObjectURL(file);
     openCoverAdjuster(previewUrl, (cropRect, meta) => {
@@ -3837,7 +3906,7 @@
       item.imgCropRect = cropRect;
       item.imgNatW = meta.natW;
       item.imgNatH = meta.natH;
-      if (kind === 'audio') renderSelectedAudios(); else renderTextFragments();
+      rerenderForKind(kind);
     });
   });
 
@@ -3899,8 +3968,8 @@
       errorEl.classList.add('show');
       return;
     }
-    if (selectedContentType === 'pdf' && !selectedPdfFile && !existingPdfUrl) {
-      errorEl.textContent = "Adjunta un PDF antes de publicar.";
+    if (selectedContentType === 'pdf' && selectedPdfs.length === 0) {
+      errorEl.textContent = "Adjunta al menos un PDF antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
@@ -3970,31 +4039,51 @@
           urls.galeria = uploaded;
         }
       }
-      if (selectedContentType === 'pdf') {
-        if (selectedPdfFile) {
-          urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf', onProgress("Subiendo PDF"));
-        } else if (existingPdfUrl) {
-          urls.pdfUrl = existingPdfUrl;
+      if (selectedContentType === 'pdf' && selectedPdfs.length > 0) {
+        const multiPdfUp = selectedPdfs.length > 1;
+        const uploaded = [];
+        for (let i = 0; i < selectedPdfs.length; i++) {
+          let url;
+          if (selectedPdfs[i].file) {
+            btn.textContent = `Subiendo PDF ${i + 1} de ${selectedPdfs.length}…`;
+            url = await uploadPostFile(selectedPdfs[i].file, mine.id, 'pdf', onProgress(`Subiendo PDF ${i + 1} de ${selectedPdfs.length}`));
+          } else {
+            url = selectedPdfs[i].existingUrl;
+          }
+          let imagenUrl = null;
+          if (multiPdfUp && selectedPdfs[i].imgFile) {
+            btn.textContent = `Subiendo imagen del PDF ${i + 1}…`;
+            imagenUrl = await uploadPostCoverImage(selectedPdfs[i].imgFile, mine.id, selectedPdfs[i].imgCropRect, onProgress(`Subiendo imagen del PDF ${i + 1}`));
+          } else if (multiPdfUp && selectedPdfs[i].imgExistingUrl) {
+            imagenUrl = selectedPdfs[i].imgExistingUrl;
+          }
+          uploaded.push({ url, titulo: multiPdfUp ? selectedPdfs[i].titulo.trim() : "", caption: multiPdfUp ? selectedPdfs[i].caption.trim() : "", imagenUrl });
+        }
+        urls.pdfUrl = uploaded[0].url;
+        if (uploaded.length > 1 || uploaded[0].caption || uploaded[0].titulo || uploaded[0].imagenUrl) {
+          urls.galeriaPdf = uploaded;
         }
       }
       if (selectedContentType === 'texto' && textFragments.length > 0) {
+        const multiText = textFragments.length > 1;
         const uploaded = [];
         for (let i = 0; i < textFragments.length; i++) {
           const f = textFragments[i];
           let imagenUrl = null;
-          if (f.imgFile) {
+          if (multiText && f.imgFile) {
             btn.textContent = `Subiendo imagen del fragmento ${i + 1}…`;
             imagenUrl = await uploadPostCoverImage(f.imgFile, mine.id, f.imgCropRect, onProgress(`Subiendo imagen del fragmento ${i + 1}`));
-          } else if (f.imgExistingUrl) {
+          } else if (multiText && f.imgExistingUrl) {
             imagenUrl = f.imgExistingUrl;
           }
-          uploaded.push({ titulo: f.titulo, texto: f.texto, imagenUrl });
+          uploaded.push({ titulo: multiText ? f.titulo : "", texto: f.texto, imagenUrl });
         }
         if (uploaded.length > 1 || uploaded[0].titulo || uploaded[0].imagenUrl) {
           urls.galeriaTexto = uploaded;
         }
       }
       if (selectedContentType === 'audio' && selectedAudios.length > 0) {
+        const multiAudioUp = selectedAudios.length > 1;
         const uploaded = [];
         for (let i = 0; i < selectedAudios.length; i++) {
           let url;
@@ -4005,13 +4094,13 @@
             url = selectedAudios[i].existingUrl;
           }
           let imagenUrl = null;
-          if (selectedAudios[i].imgFile) {
+          if (multiAudioUp && selectedAudios[i].imgFile) {
             btn.textContent = `Subiendo imagen del audio ${i + 1}…`;
             imagenUrl = await uploadPostCoverImage(selectedAudios[i].imgFile, mine.id, selectedAudios[i].imgCropRect, onProgress(`Subiendo imagen del audio ${i + 1}`));
-          } else if (selectedAudios[i].imgExistingUrl) {
+          } else if (multiAudioUp && selectedAudios[i].imgExistingUrl) {
             imagenUrl = selectedAudios[i].imgExistingUrl;
           }
-          uploaded.push({ url, titulo: selectedAudios[i].titulo.trim(), caption: selectedAudios[i].caption.trim(), imagenUrl });
+          uploaded.push({ url, titulo: multiAudioUp ? selectedAudios[i].titulo.trim() : "", caption: multiAudioUp ? selectedAudios[i].caption.trim() : "", imagenUrl });
         }
         urls.audioUrl = uploaded[0].url;
         if (uploaded.length > 1 || uploaded[0].caption || uploaded[0].titulo || uploaded[0].imagenUrl) {
@@ -4073,6 +4162,7 @@
           updates.imagenUrl = urls.imagenUrl ?? null;
         } else if (selectedContentType === 'pdf') {
           updates.pdfUrl = urls.pdfUrl ?? null;
+          updates.galeriaPdf = urls.galeriaPdf || null;
           updates.imagenUrl = urls.imagenUrl ?? null;
         }
         await updateDoc(doc(db, "publicaciones", editingPostId), updates);
