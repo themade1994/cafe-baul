@@ -450,7 +450,8 @@
     cursor: pointer; padding: 4px;
   }
 
-  .type-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .type-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .type-btn { min-width: 64px; }
   .type-btn {
     flex: 1;
     padding: 10px 6px;
@@ -708,7 +709,39 @@
     background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
     cursor: pointer; padding: 0 4px; flex-shrink: 0;
   }
-  .post-gallery { position: relative; margin-top: 8px; }
+  .publish-text-fragment-item {
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px;
+  }
+  .publish-text-fragment-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--ink-muted); }
+  .publish-text-fragment-remove {
+    background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  }
+  .post-gallery-text { margin: 0; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; }
+  .publish-audio-item {
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px;
+  }
+  .publish-audio-item audio { width: 100%; }
+  .publish-audio-item .publish-audio-item-row { display: flex; gap: 10px; align-items: center; }
+  .publish-audio-item .publish-audio-caption { flex: 1; min-width: 0; margin: 0; }
+  .publish-audio-item .publish-audio-remove {
+    background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  }
+  .publish-video-item {
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px;
+  }
+  .publish-video-item video { width: 100%; max-height: 220px; object-fit: contain; background: #000; border-radius: var(--radius-s); }
+  .publish-video-item .publish-video-item-row { display: flex; gap: 10px; align-items: center; }
+  .publish-video-item .publish-video-caption { flex: 1; min-width: 0; margin: 0; }
+  .publish-video-item .publish-video-remove {
+    background: none; border: none; color: var(--ink-faint); font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  }
+  .post-gallery { position: relative; margin-top: 8px; touch-action: pan-y; }
   .post-gallery img {
     width: 100%; max-height: 70vh; object-fit: contain;
     border-radius: var(--radius-s); display: block; background: #000;
@@ -727,6 +760,18 @@
     padding: 2px 8px; border-radius: 20px;
   }
   .post-gallery-caption { font-size: 0.82rem; color: var(--ink-muted); margin-top: 6px; }
+  .post-gallery-title { font-size: 0.92rem; font-weight: 600; color: var(--ink); margin-top: 8px; }
+
+  .post-gallery-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .post-audio-gallery .post-gallery-nav, .post-text-gallery .post-gallery-nav {
+    position: static; transform: none;
+    background: var(--bg-elevated); border: 1px solid var(--line); color: var(--ink);
+    width: auto; height: auto; border-radius: var(--radius-s);
+    padding: 6px 14px; font-size: 0.8rem;
+  }
+  .post-audio-gallery .post-gallery-counter, .post-text-gallery .post-gallery-counter {
+    position: static; background: none; color: var(--ink-muted); padding: 0;
+  }
 
   .post-card {
     border-bottom: 1px solid var(--line);
@@ -1114,6 +1159,7 @@
       <button type="button" class="type-btn" data-type="audio">Audio</button>
       <button type="button" class="type-btn" data-type="video">Video</button>
       <button type="button" class="type-btn" data-type="imagen">Imagen</button>
+      <button type="button" class="type-btn" data-type="pdf">PDF</button>
     </div>
     <div class="mode-options" id="mode-options">
       <div class="mode-option selected" data-mode="publico">
@@ -1154,15 +1200,16 @@
       </div>
     </div>
     <div id="publish-text-block">
-      <label class="field-label" for="publish-text">Tu escrito</label>
-      <textarea class="sheet-textarea sheet-textarea-writing" id="publish-text" placeholder="Este es tu espacio para explayarte: tu meditación, tu relato, tu texto largo…"></textarea>
+      <label class="field-label">Tu escrito</label>
+      <div id="publish-text-fragments-list" style="display:flex; flex-direction:column; gap:14px; margin-bottom:12px;"></div>
+      <button type="button" class="copy-btn" id="publish-text-fragment-btn" style="width:100%; margin-bottom:16px;">+ Añadir otro fragmento</button>
     </div>
 
-    <!-- Texto: PDF opcional -->
-    <div id="publish-pdf-block">
+    <!-- PDF -->
+    <div id="publish-pdf-block" style="display:none;">
       <input type="file" id="publish-pdf-input" accept="application/pdf" style="display:none;">
       <div id="publish-pdf-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-pdf-btn" style="width:100%;">+ Adjuntar PDF (opcional)</button>
+        <button type="button" class="copy-btn" id="publish-pdf-btn" style="width:100%;">+ Adjuntar PDF (máx. 50MB)</button>
       </div>
       <div id="publish-pdf-preview" class="file-preview-name" style="display:none; margin-bottom:16px;">
         <span id="publish-pdf-name"></span>
@@ -1172,26 +1219,16 @@
 
     <!-- Audio -->
     <div id="publish-audio-block" style="display:none;">
-      <input type="file" id="publish-audio-input" accept="audio/*" style="display:none;">
-      <div id="publish-audio-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-audio-btn" style="width:100%;">+ Adjuntar audio (máx. 5 min · 50MB)</button>
-      </div>
-      <div id="publish-audio-preview" style="display:none; margin-bottom:16px;">
-        <audio id="publish-audio-player" controls style="width:100%; display:block; margin-bottom:8px;"></audio>
-        <button type="button" class="copy-btn" id="publish-audio-remove" style="width:100%;">Quitar audio</button>
-      </div>
+      <input type="file" id="publish-audio-input" accept="audio/*" multiple style="display:none;">
+      <div id="publish-audios-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
+      <button type="button" class="copy-btn" id="publish-audio-btn" style="width:100%;">+ Añadir audio (máx. 5 min · 50MB c/u)</button>
     </div>
 
     <!-- Video -->
     <div id="publish-video-block" style="display:none;">
-      <input type="file" id="publish-video-input" accept="video/*" style="display:none;">
-      <div id="publish-video-row" style="margin-bottom:16px;">
-        <button type="button" class="copy-btn" id="publish-video-btn" style="width:100%;">+ Adjuntar video (máx. 2 min · 50MB)</button>
-      </div>
-      <div id="publish-video-preview" style="display:none; margin-bottom:16px;">
-        <video id="publish-video-player" controls style="width:100%; max-height:320px; border-radius:var(--radius-s); display:block; margin-bottom:8px; object-fit:contain; background:#000;"></video>
-        <button type="button" class="copy-btn" id="publish-video-remove" style="width:100%;">Quitar video</button>
-      </div>
+      <input type="file" id="publish-video-input" accept="video/*" multiple style="display:none;">
+      <div id="publish-videos-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
+      <button type="button" class="copy-btn" id="publish-video-btn" style="width:100%;">+ Añadir video (máx. 2 min · 50MB c/u)</button>
     </div>
 
     <!-- Imagen -->
@@ -1200,15 +1237,41 @@
       <div id="publish-images-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
       <button type="button" class="copy-btn" id="publish-photo-btn" style="width:100%; margin-bottom:16px;">+ Añadir imagen</button>
     </div>
-    <!-- Imagen de referencia (solo para texto y audio, que no tienen imagen propia) -->
+    <!-- Imagen de referencia / portada de la publicación (para todos los tipos) -->
     <div id="publish-cover-block" style="display:none;">
       <input type="file" id="publish-cover-input" accept="image/*" style="display:none;">
       <div id="publish-cover-row" style="margin-bottom:16px;">
         <button type="button" class="copy-btn" id="publish-cover-btn" style="width:100%;">+ Imagen de referencia (opcional)</button>
       </div>
-      <div id="publish-cover-preview" style="display:none; margin-bottom:16px; position:relative;">
-        <img id="publish-cover-img" style="width:100%; max-height:220px; object-fit:cover; border-radius:var(--radius-s); display:block; background:#000;">
-        <button type="button" class="copy-btn" id="publish-cover-remove" style="width:100%; margin-top:8px;">Quitar imagen</button>
+      <div id="publish-cover-preview" style="display:none; margin-bottom:16px;">
+        <div id="publish-cover-box" style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-s); background:var(--bg-elevated); background-repeat:no-repeat; border:1px solid var(--line);"></div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button type="button" class="copy-btn" id="publish-cover-adjust-btn" style="flex:1;">Ajustar recorte</button>
+          <button type="button" class="copy-btn" id="publish-cover-remove" style="flex:1;">Quitar imagen</button>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="item-cover-input" accept="image/*" style="display:none;">
+
+    <!-- Ajustar recorte de la imagen de referencia -->
+    <div class="sheet-overlay" id="cover-adjust-overlay">
+      <div class="sheet" style="max-width:480px;">
+        <div class="sheet-head">
+          <h3>Ajusta tu imagen</h3>
+          <button class="sheet-close" id="cover-adjust-close" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <p style="color:var(--ink-muted); font-size:0.85rem; margin:-8px 0 14px;">Arrastra la imagen para moverla y usa la barra para acercar. Solo se guarda lo que quede dentro del marco.</p>
+        <div id="cover-adjust-frame" style="position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:var(--radius-s); background:var(--bg-elevated); touch-action:none; cursor:grab; border:1px solid var(--line);">
+          <img id="cover-adjust-img" style="position:absolute; left:0; top:0; max-width:none; max-height:none; transform-origin:0 0; user-select:none; -webkit-user-drag:none;" draggable="false">
+        </div>
+        <input type="range" id="cover-adjust-zoom" min="100" max="300" value="100" style="width:100%; margin:16px 0 18px;">
+        <div class="sheet-error" id="cover-adjust-error"></div>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="copy-btn" id="cover-adjust-skip" style="flex:1;">Usar imagen completa</button>
+          <button type="button" class="sheet-submit" id="cover-adjust-save" style="flex:1; margin:0;">Guardar recorte</button>
+        </div>
       </div>
     </div>
     <div class="sheet-error" id="publish-error"></div>
@@ -1383,16 +1446,6 @@
     <div id="feed-body" style="max-height:60vh; overflow-y:auto;"></div>
   </div>
 </div>
-
-<script>
-  const overlay = document.getElementById('sheet-overlay');
-  const open = () => overlay.classList.add('open');
-  const close = () => overlay.classList.remove('open');
-
-  document.getElementById('btn-publish').addEventListener('click', open);
-  document.getElementById('sheet-close').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
@@ -1703,6 +1756,17 @@
     return await uploadToCloudinary(file, `publicaciones/${autorId}`, onProgress);
   }
 
+  async function uploadPostCoverImage(file, autorId, cropRect, onProgress) {
+    // Igual que la foto de perfil: se sube el archivo tal cual (sin canvas local)
+    // y el recorte, si el usuario eligió uno, lo aplica Cloudinary en su servidor.
+    const url = await uploadToCloudinary(file, `publicaciones/${autorId}`, onProgress);
+    if (cropRect && cropRect.width > 0 && cropRect.height > 0) {
+      const { x, y, width, height } = cropRect;
+      return insertCloudinaryTransform(url, `c_crop,x_${x},y_${y},w_${width},h_${height}/w_1280,c_limit,q_auto,f_auto`);
+    }
+    return insertCloudinaryTransform(url, 'w_1280,c_limit,q_auto,f_auto');
+  }
+
   async function uploadPostFile(file, autorId, subfolder, onProgress) {
     return await uploadToCloudinary(file, `publicaciones/${autorId}/${subfolder}`, onProgress);
   }
@@ -1759,11 +1823,15 @@
       titulo: titulo || null,
       descripcion: descripcion || null,
       texto,
+      galeriaTexto: urls.galeriaTexto || null,
       imagenUrl: urls.imagenUrl || null,
+      portadaUrl: urls.portadaUrl || null,
       galeria: urls.galeria || null,
       pdfUrl: urls.pdfUrl || null,
       audioUrl: urls.audioUrl || null,
+      galeriaAudio: urls.galeriaAudio || null,
       videoUrl: urls.videoUrl || null,
+      galeriaVideo: urls.galeriaVideo || null,
       videoThumbUrl: urls.videoUrl ? videoThumbUrl(urls.videoUrl) : null,
       modo,
       autorizados: (modo === 'selectivo' || modo === 'grupal') ? autorizados : [],
@@ -1810,41 +1878,158 @@
   const galleryState = {};
 
   function renderImageGalleryHTML(p) {
-    const images = (p.galeria && p.galeria.length > 0) ? p.galeria : (p.imagenUrl ? [{ url: p.imagenUrl, caption: "" }] : []);
-    if (images.length === 0) return '';
-    galleryState[p.id] = { images, index: 0 };
-    const img = images[0];
+    const items = (p.galeria && p.galeria.length > 0) ? p.galeria : (p.imagenUrl ? [{ url: p.imagenUrl, titulo: "", caption: "" }] : []);
+    if (items.length === 0) return '';
+    galleryState[p.id] = { kind: 'image', items, index: 0 };
+    const it = items[0];
     return `
       <div class="post-gallery" data-gallery-id="${p.id}">
-        <img class="post-gallery-img" src="${img.url}">
-        ${images.length > 1 ? `
+        <img class="post-gallery-img" src="${it.url}">
+        ${items.length > 1 ? `
           <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹</button>
           <button type="button" class="post-gallery-nav post-gallery-next">›</button>
-          <div class="post-gallery-counter">1 / ${images.length}</div>
+          <div class="post-gallery-counter">1 / ${items.length}</div>
         ` : ''}
-        <div class="post-gallery-caption" style="${img.caption ? '' : 'display:none;'}">${escapeHtml(img.caption)}</div>
+        <div class="post-gallery-title" style="${it.titulo ? '' : 'display:none;'}">${escapeHtml(it.titulo || '')}</div>
+        <div class="post-gallery-caption" style="${it.caption ? '' : 'display:none;'}">${escapeHtml(it.caption)}</div>
+      </div>
+    `;
+  }
+
+  function renderTextGalleryHTML(p) {
+    const items = (p.galeriaTexto && p.galeriaTexto.length > 0) ? p.galeriaTexto : (p.texto ? [{ titulo: "", texto: p.texto }] : []);
+    if (items.length === 0) return '';
+    galleryState[p.id] = { kind: 'text', items, index: 0 };
+    const it = items[0];
+    return `
+      <div class="post-gallery post-text-gallery" data-gallery-id="${p.id}">
+        <img class="post-gallery-item-image" src="${it.imagenUrl || ''}" style="width:100%; max-height:260px; object-fit:contain; background:var(--bg-elevated); border-radius:var(--radius-s); margin-bottom:10px; display:${it.imagenUrl ? 'block' : 'none'};">
+        <div class="post-gallery-title" style="${it.titulo ? '' : 'display:none;'}">${escapeHtml(it.titulo || '')}</div>
+        <p class="post-gallery-text">${escapeHtml(it.texto)}</p>
+        ${items.length > 1 ? `
+          <div class="post-gallery-nav-row">
+            <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹ Anterior</button>
+            <div class="post-gallery-counter">1 / ${items.length}</div>
+            <button type="button" class="post-gallery-nav post-gallery-next">Siguiente ›</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function renderAudioGalleryHTML(p) {
+    const items = (p.galeriaAudio && p.galeriaAudio.length > 0) ? p.galeriaAudio : (p.audioUrl ? [{ url: p.audioUrl, titulo: "", caption: "" }] : []);
+    if (items.length === 0) return '';
+    galleryState[p.id] = { kind: 'audio', items, index: 0 };
+    const it = items[0];
+    return `
+      <div class="post-gallery post-audio-gallery" data-gallery-id="${p.id}">
+        <img class="post-gallery-item-image" src="${it.imagenUrl || ''}" style="width:100%; max-height:260px; object-fit:contain; background:var(--bg-elevated); border-radius:var(--radius-s); margin-bottom:10px; display:${it.imagenUrl ? 'block' : 'none'};">
+        <div class="post-gallery-title" style="${it.titulo ? '' : 'display:none;'}">${escapeHtml(it.titulo || '')}</div>
+        <audio class="post-gallery-audio" src="${it.url}" controls style="width:100%; display:block;"></audio>
+        ${items.length > 1 ? `
+          <div class="post-gallery-nav-row">
+            <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹ Anterior</button>
+            <div class="post-gallery-counter">1 / ${items.length}</div>
+            <button type="button" class="post-gallery-nav post-gallery-next">Siguiente ›</button>
+          </div>
+        ` : ''}
+        <div class="post-gallery-caption" style="${it.caption ? '' : 'display:none;'}">${escapeHtml(it.caption)}</div>
+      </div>
+    `;
+  }
+
+  function renderVideoGalleryHTML(p) {
+    const items = (p.galeriaVideo && p.galeriaVideo.length > 0) ? p.galeriaVideo : (p.videoUrl ? [{ url: p.videoUrl, titulo: "", caption: "" }] : []);
+    if (items.length === 0) return '';
+    galleryState[p.id] = { kind: 'video', items, index: 0 };
+    const it = items[0];
+    const thumb = videoThumbUrl(it.url);
+    return `
+      <div class="post-gallery" data-gallery-id="${p.id}">
+        <video class="post-gallery-video" src="${it.url}" ${thumb ? `poster="${thumb}"` : ''} controls style="width:100%; max-height:70vh; object-fit:contain; border-radius:var(--radius-s); display:block; background:#000;"></video>
+        ${items.length > 1 ? `
+          <button type="button" class="post-gallery-nav post-gallery-prev" style="display:none;">‹</button>
+          <button type="button" class="post-gallery-nav post-gallery-next">›</button>
+          <div class="post-gallery-counter">1 / ${items.length}</div>
+        ` : ''}
+        <div class="post-gallery-title" style="${it.titulo ? '' : 'display:none;'}">${escapeHtml(it.titulo || '')}</div>
+        <div class="post-gallery-caption" style="${it.caption ? '' : 'display:none;'}">${escapeHtml(it.caption)}</div>
       </div>
     `;
   }
 
   // Delegación global: funciona sin importar dónde se haya renderizado la galería (feed, galería propia, etc.)
+  function navigateGallery(container, delta) {
+    const state = galleryState[container.dataset.galleryId];
+    if (!state) return;
+    const newIndex = Math.max(0, Math.min(state.items.length - 1, state.index + delta));
+    if (newIndex === state.index) return;
+    state.index = newIndex;
+    const current = state.items[state.index];
+    if (state.kind === 'audio') {
+      const audioEl = container.querySelector('.post-gallery-audio');
+      audioEl.pause();
+      audioEl.src = current.url;
+    } else if (state.kind === 'video') {
+      const videoEl = container.querySelector('.post-gallery-video');
+      videoEl.pause();
+      videoEl.src = current.url;
+      const thumb = videoThumbUrl(current.url);
+      if (thumb) videoEl.poster = thumb; else videoEl.removeAttribute('poster');
+    } else if (state.kind === 'text') {
+      container.querySelector('.post-gallery-text').textContent = current.texto;
+    } else {
+      container.querySelector('.post-gallery-img').src = current.url;
+    }
+    const titleEl = container.querySelector('.post-gallery-title');
+    if (titleEl) {
+      titleEl.textContent = current.titulo || "";
+      titleEl.style.display = current.titulo ? '' : 'none';
+    }
+    const itemImageEl = container.querySelector('.post-gallery-item-image');
+    if (itemImageEl) {
+      itemImageEl.src = current.imagenUrl || '';
+      itemImageEl.style.display = current.imagenUrl ? 'block' : 'none';
+    }
+    const captionEl = container.querySelector('.post-gallery-caption');
+    if (captionEl) {
+      captionEl.textContent = current.caption || "";
+      captionEl.style.display = current.caption ? '' : 'none';
+    }
+    container.querySelector('.post-gallery-counter').textContent = `${state.index + 1} / ${state.items.length}`;
+    container.querySelector('.post-gallery-prev').style.display = state.index === 0 ? 'none' : 'flex';
+    container.querySelector('.post-gallery-next').style.display = state.index === state.items.length - 1 ? 'none' : 'flex';
+  }
+
   document.addEventListener('click', (e) => {
     const navBtn = e.target.closest('.post-gallery-nav');
     if (!navBtn) return;
     const container = navBtn.closest('.post-gallery');
-    const state = galleryState[container.dataset.galleryId];
-    if (!state) return;
-    state.index += navBtn.classList.contains('post-gallery-next') ? 1 : -1;
-    state.index = Math.max(0, Math.min(state.images.length - 1, state.index));
-    const current = state.images[state.index];
-    container.querySelector('.post-gallery-img').src = current.url;
-    const captionEl = container.querySelector('.post-gallery-caption');
-    captionEl.textContent = current.caption || "";
-    captionEl.style.display = current.caption ? '' : 'none';
-    container.querySelector('.post-gallery-counter').textContent = `${state.index + 1} / ${state.images.length}`;
-    container.querySelector('.post-gallery-prev').style.display = state.index === 0 ? 'none' : 'flex';
-    container.querySelector('.post-gallery-next').style.display = state.index === state.images.length - 1 ? 'none' : 'flex';
+    navigateGallery(container, navBtn.classList.contains('post-gallery-next') ? 1 : -1);
   });
+
+  // Deslizar con el dedo (izquierda/derecha) para navegar la galería en pantallas táctiles.
+  let gallerySwipe = null;
+  document.addEventListener('touchstart', (e) => {
+    const container = e.target.closest('.post-gallery');
+    if (!container || container.classList.contains('post-text-gallery') || !galleryState[container.dataset.galleryId]) return;
+    const t = e.touches[0];
+    gallerySwipe = { container, startX: t.clientX, startY: t.clientY };
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!gallerySwipe) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - gallerySwipe.startX;
+    const dy = t.clientY - gallerySwipe.startY;
+    // Solo se considera deslizar si el movimiento es más horizontal que vertical,
+    // así no interfiere con el scroll normal de la página hacia arriba/abajo.
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      navigateGallery(gallerySwipe.container, dx < 0 ? 1 : -1);
+    }
+    gallerySwipe = null;
+  }, { passive: true });
 
   function renderPostCardHTML(p, opts = {}) {
     const { showComment = false, showDelete = false, authorId = "" } = opts;
@@ -1856,12 +2041,13 @@
           'Selectivo'
         }</div>
         ${p.titulo ? `<h4 class="post-title">${escapeHtml(p.titulo)}</h4>` : ''}
-        ${(p.tipo === 'texto' || p.tipo === 'audio') && p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; max-height:260px; object-fit:cover; border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
+        ${(p.tipo === 'texto' || p.tipo === 'audio' || p.tipo === 'pdf') && p.imagenUrl ? `<img src="${p.imagenUrl}" style="width:100%; max-height:260px; object-fit:contain; background:var(--bg-elevated); border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
+        ${(p.tipo === 'imagen' || p.tipo === 'video') && p.portadaUrl ? `<img src="${p.portadaUrl}" style="width:100%; max-height:260px; object-fit:contain; background:var(--bg-elevated); border-radius:var(--radius-s); margin-bottom:10px; display:block;">` : ''}
         ${p.descripcion ? `<p class="post-description">${escapeHtml(p.descripcion)}</p>` : ''}
-        ${p.texto ? `<p>${escapeHtml(p.texto)}</p>` : ''}
-        ${p.tipo !== 'texto' && p.tipo !== 'audio' ? renderImageGalleryHTML(p) : ''}
-        ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="width:100%; margin-top:8px; display:block;"></audio>` : ''}
-        ${p.videoUrl ? `<video src="${p.videoUrl}" ${p.videoThumbUrl ? `poster="${p.videoThumbUrl}"` : ''} controls style="width:100%; max-height:70vh; object-fit:contain; border-radius:var(--radius-s); margin-top:8px; display:block; background:#000;"></video>` : ''}
+        ${p.tipo === 'texto' ? renderTextGalleryHTML(p) : ''}
+        ${p.tipo === 'imagen' ? renderImageGalleryHTML(p) : ''}
+        ${p.tipo === 'audio' ? renderAudioGalleryHTML(p) : ''}
+        ${p.tipo === 'video' ? renderVideoGalleryHTML(p) : ''}
         ${p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="copy-btn" style="display:block; text-align:center; margin-top:8px; text-decoration:none;">Ver PDF</a>` : ''}
         <div class="post-time">${timeAgo(p.creado)}</div>
         <div class="post-actions">
@@ -2038,6 +2224,7 @@
     if (tipo === 'imagen') return { label: 'Imagen', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 16l-5-5-4 4-3-3-5 5"/></svg>` };
     if (tipo === 'audio') return { label: 'Audio', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>` };
     if (tipo === 'video') return { label: 'Video', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>` };
+    if (tipo === 'pdf') return { label: 'PDF', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5a1 1 0 0 0 1 1h5"/><path d="M6 3h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 15h1.5a1.5 1.5 0 0 0 0-3H8v5M13 12v5h1.2a1.8 1.8 0 0 0 0-5H13z"/></svg>` };
     return { label: 'Texto', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 10h14M5 16h9"/></svg>` };
   }
 
@@ -2054,13 +2241,13 @@
       const t = p.texto.trim();
       return t.length > 60 ? t.slice(0, 60) + "…" : t;
     }
-    const fallback = { imagen: "Una imagen nueva", audio: "Un audio nuevo", video: "Un video nuevo", texto: "Un PDF nuevo" };
+    const fallback = { imagen: "Una imagen nueva", audio: "Un audio nuevo", video: "Un video nuevo", texto: "Un texto nuevo", pdf: "Un PDF nuevo" };
     return fallback[p.tipo] || "Una publicación";
   }
 
   function renderRecentCardHTML(p) {
     const meta = typeMeta(p.tipo);
-    const thumbUrl = p.imagenUrl || p.videoThumbUrl || null;
+    const thumbUrl = p.portadaUrl || p.imagenUrl || p.videoThumbUrl || null;
     const thumbStyle = thumbUrl
       ? `background-image:url('${thumbUrl}'); background-size:cover; background-position:center;`
       : `background:linear-gradient(135deg, var(--bg-elevated), var(--bg-panel));`;
@@ -2744,9 +2931,108 @@
 
   let selectedGroupIds = new Set();
   let selectedContentType = 'texto';
-  let selectedPdfFile = null;
-  let selectedAudioFile = null;
-  let selectedVideoFile = null;
+  let selectedTextFragments = [{ titulo: "", texto: "" }];
+
+  function renderTextFragments() {
+    const list = document.getElementById('publish-text-fragments-list');
+    list.innerHTML = selectedTextFragments.map((f, i) => `
+      <div class="publish-text-fragment-item" data-index="${i}">
+        ${selectedTextFragments.length > 1 ? `
+          <div class="publish-text-fragment-head">
+            <span>Fragmento ${i + 1} de ${selectedTextFragments.length}</span>
+            <button type="button" class="publish-text-fragment-remove" title="Quitar este fragmento">✕</button>
+          </div>
+        ` : ''}
+        <input type="text" class="sheet-input publish-text-fragment-title" placeholder="Título de este fragmento (opcional)" maxlength="80" value="${escapeHtml(f.titulo).replace(/"/g, '&quot;')}" style="margin:0;">
+        <textarea class="sheet-textarea sheet-textarea-writing publish-text-fragment-input" placeholder="Este es tu espacio para explayarte: tu meditación, tu relato, tu texto largo…">${escapeHtml(f.texto)}</textarea>
+        ${itemCoverPickerHTML(f)}
+      </div>
+    `).join("");
+    list.querySelectorAll('.publish-text-fragment-item').forEach(item => {
+      const i = parseInt(item.dataset.index, 10);
+      item.querySelector('.publish-text-fragment-title').addEventListener('input', (e) => {
+        selectedTextFragments[i].titulo = e.target.value;
+      });
+      item.querySelector('.publish-text-fragment-input').addEventListener('input', (e) => {
+        selectedTextFragments[i].texto = e.target.value;
+      });
+      const removeBtn = item.querySelector('.publish-text-fragment-remove');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          selectedTextFragments.splice(i, 1);
+          renderTextFragments();
+        });
+      }
+      wireItemCoverPicker(item, 'text', i, selectedTextFragments[i], renderTextFragments);
+    });
+  }
+  document.getElementById('publish-text-fragment-btn').addEventListener('click', () => {
+    selectedTextFragments.push({ titulo: "", texto: "" });
+    renderTextFragments();
+    const items = document.querySelectorAll('.publish-text-fragment-input');
+    items[items.length - 1]?.focus();
+  });
+
+  let selectedAudios = []; // { file?, existingUrl?, titulo, caption, previewUrl, imgFile?, imgExistingUrl?, imgPreviewUrl?, imgCropRect?, imgNatW?, imgNatH? }
+
+  function renderSelectedAudios() {
+    const list = document.getElementById('publish-audios-list');
+    list.innerHTML = selectedAudios.map((a, i) => `
+      <div class="publish-audio-item" data-index="${i}">
+        <audio controls src="${a.file ? a.previewUrl : a.existingUrl}"></audio>
+        <input type="text" class="sheet-input publish-audio-title" placeholder="Título de este audio (opcional)" maxlength="80" value="${escapeHtml(a.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">
+        <div class="publish-audio-item-row">
+          <input type="text" class="sheet-input publish-audio-caption" placeholder="Descripción de este audio (opcional)" maxlength="140" value="${escapeHtml(a.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+          <button type="button" class="publish-audio-remove" title="Quitar">✕</button>
+        </div>
+        ${itemCoverPickerHTML(a)}
+      </div>
+    `).join("");
+    list.querySelectorAll('.publish-audio-item').forEach(item => {
+      const i = parseInt(item.dataset.index, 10);
+      item.querySelector('.publish-audio-title').addEventListener('input', (e) => {
+        selectedAudios[i].titulo = e.target.value;
+      });
+      item.querySelector('.publish-audio-caption').addEventListener('input', (e) => {
+        selectedAudios[i].caption = e.target.value;
+      });
+      item.querySelector('.publish-audio-remove').addEventListener('click', () => {
+        if (selectedAudios[i].previewUrl) URL.revokeObjectURL(selectedAudios[i].previewUrl);
+        selectedAudios.splice(i, 1);
+        renderSelectedAudios();
+      });
+      wireItemCoverPicker(item, 'audio', i, selectedAudios[i], renderSelectedAudios);
+    });
+  }
+  let selectedVideos = []; // { file?, existingUrl?, titulo, caption, previewUrl }
+
+  function renderSelectedVideos() {
+    const list = document.getElementById('publish-videos-list');
+    list.innerHTML = selectedVideos.map((v, i) => `
+      <div class="publish-video-item" data-index="${i}">
+        <video controls src="${v.file ? v.previewUrl : v.existingUrl}"></video>
+        <input type="text" class="sheet-input publish-video-title" placeholder="Título de este video (opcional)" maxlength="80" value="${escapeHtml(v.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">
+        <div class="publish-video-item-row">
+          <input type="text" class="sheet-input publish-video-caption" placeholder="Descripción de este video (opcional)" maxlength="140" value="${escapeHtml(v.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+          <button type="button" class="publish-video-remove" title="Quitar">✕</button>
+        </div>
+      </div>
+    `).join("");
+    list.querySelectorAll('.publish-video-item').forEach(item => {
+      const i = parseInt(item.dataset.index, 10);
+      item.querySelector('.publish-video-title').addEventListener('input', (e) => {
+        selectedVideos[i].titulo = e.target.value;
+      });
+      item.querySelector('.publish-video-caption').addEventListener('input', (e) => {
+        selectedVideos[i].caption = e.target.value;
+      });
+      item.querySelector('.publish-video-remove').addEventListener('click', () => {
+        if (selectedVideos[i].previewUrl) URL.revokeObjectURL(selectedVideos[i].previewUrl);
+        selectedVideos.splice(i, 1);
+        renderSelectedVideos();
+      });
+    });
+  }
 
   const AUDIO_MAX_SECONDS = 5 * 60;
   const VIDEO_MAX_SECONDS = 2 * 60;
@@ -2766,23 +3052,32 @@
     selectedContentType = type;
     document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('selected', b.dataset.type === type));
     document.getElementById('publish-text-block').style.display = type === 'texto' ? 'block' : 'none';
-    document.getElementById('publish-pdf-block').style.display = type === 'texto' ? 'block' : 'none';
+    document.getElementById('publish-pdf-block').style.display = type === 'pdf' ? 'block' : 'none';
     document.getElementById('publish-audio-block').style.display = type === 'audio' ? 'block' : 'none';
     document.getElementById('publish-video-block').style.display = type === 'video' ? 'block' : 'none';
     document.getElementById('publish-image-block').style.display = type === 'imagen' ? 'block' : 'none';
-    document.getElementById('publish-cover-block').style.display = (type === 'texto' || type === 'audio') ? 'block' : 'none';
+    document.getElementById('publish-cover-block').style.display = 'block';
   }
 
   function resetPublishFormFields() {
     document.getElementById('publish-title').value = "";
     document.getElementById('publish-description').value = "";
-    document.getElementById('publish-text').value = "";
+    selectedTextFragments.forEach(f => { if (f.imgPreviewUrl) URL.revokeObjectURL(f.imgPreviewUrl); });
+    selectedTextFragments = [{ titulo: "", texto: "" }];
+    renderTextFragments();
     selectedImages.forEach(img => { if (img.previewUrl) URL.revokeObjectURL(img.previewUrl); });
     selectedImages = [];
     renderSelectedImages();
+    selectedAudios.forEach(a => {
+      if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      if (a.imgPreviewUrl) URL.revokeObjectURL(a.imgPreviewUrl);
+    });
+    selectedAudios = [];
+    renderSelectedAudios();
+    selectedVideos.forEach(v => { if (v.previewUrl) URL.revokeObjectURL(v.previewUrl); });
+    selectedVideos = [];
+    renderSelectedVideos();
     document.getElementById('publish-pdf-remove').click();
-    document.getElementById('publish-audio-remove').click();
-    document.getElementById('publish-video-remove').click();
     document.getElementById('publish-cover-remove').click();
     switchContentType('texto');
     selectedGroupIds = new Set();
@@ -2794,8 +3089,6 @@
     document.getElementById('publish-submit').textContent = "Publicar";
     document.getElementById('type-tabs').style.pointerEvents = '';
     document.getElementById('type-tabs').style.opacity = '';
-    document.getElementById('mode-options').style.pointerEvents = '';
-    document.getElementById('mode-options').style.opacity = '';
   }
 
   function exitPublishSheet() {
@@ -2804,9 +3097,13 @@
   }
   document.getElementById('sheet-close').addEventListener('click', exitPublishSheet);
   publishOverlay.addEventListener('click', (e) => { if (e.target === publishOverlay) exitPublishSheet(); });
-  document.getElementById('btn-publish').addEventListener('click', () => { if (editingPostId) exitPublishSheet(); });
+  document.getElementById('btn-publish').addEventListener('click', () => {
+    if (editingPostId) { exitPublishSheet(); return; }
+    resetPublishFormFields();
+    publishOverlay.classList.add('open');
+  });
 
-  function enterEditMode(post) {
+  async function enterEditMode(post) {
     resetPublishFormFields();
     editingPostId = post.id;
     document.getElementById('publish-sheet-title').textContent = "Editar publicación";
@@ -2816,18 +3113,39 @@
     switchContentType(post.tipo);
     document.getElementById('type-tabs').style.pointerEvents = 'none';
     document.getElementById('type-tabs').style.opacity = '0.5';
-    document.getElementById('mode-options').style.pointerEvents = 'none';
-    document.getElementById('mode-options').style.opacity = '0.5';
+    // El tipo de contenido (texto/imagen/audio/video) no se puede cambiar al editar,
+    // pero el alcance (público/selectivo/grupal) sí — se puede reabrir o cerrar después.
+    await selectPublishMode(post.modo || 'publico', post.modo === 'selectivo' ? (post.autorizados || []) : (post.modo === 'grupal' ? post.grupoNombre : null));
     if (post.tipo === 'texto') {
-      document.getElementById('publish-text').value = post.texto || "";
+      const source = (post.galeriaTexto && post.galeriaTexto.length > 0)
+        ? post.galeriaTexto.map(f => ({ titulo: f.titulo || "", texto: f.texto || "", imgExistingUrl: f.imagenUrl || null }))
+        : [{ titulo: "", texto: post.texto || "", imgExistingUrl: null }];
+      selectedTextFragments = source.length > 0 ? source : [{ titulo: "", texto: "" }];
+      renderTextFragments();
     }
-    if ((post.tipo === 'texto' || post.tipo === 'audio') && post.imagenUrl) {
+    if ((post.tipo === 'texto' || post.tipo === 'audio' || post.tipo === 'pdf') && post.imagenUrl) {
       showExistingCover(post.imagenUrl);
+    }
+    if ((post.tipo === 'imagen' || post.tipo === 'video') && post.portadaUrl) {
+      showExistingCover(post.portadaUrl);
+    }
+    if (post.tipo === 'pdf' && post.pdfUrl) {
+      showExistingPdf(post.pdfUrl, "PDF ya adjunto");
     }
     if (post.tipo === 'imagen') {
       const source = (post.galeria && post.galeria.length > 0) ? post.galeria : (post.imagenUrl ? [{ url: post.imagenUrl, caption: '' }] : []);
-      selectedImages = source.map(img => ({ existingUrl: img.url, caption: img.caption || "" }));
+      selectedImages = source.map(img => ({ existingUrl: img.url, titulo: img.titulo || "", caption: img.caption || "" }));
       renderSelectedImages();
+    }
+    if (post.tipo === 'audio') {
+      const source = (post.galeriaAudio && post.galeriaAudio.length > 0) ? post.galeriaAudio : (post.audioUrl ? [{ url: post.audioUrl, caption: '' }] : []);
+      selectedAudios = source.map(a => ({ existingUrl: a.url, titulo: a.titulo || "", caption: a.caption || "", imgExistingUrl: a.imagenUrl || null }));
+      renderSelectedAudios();
+    }
+    if (post.tipo === 'video') {
+      const source = (post.galeriaVideo && post.galeriaVideo.length > 0) ? post.galeriaVideo : (post.videoUrl ? [{ url: post.videoUrl, caption: '' }] : []);
+      selectedVideos = source.map(v => ({ existingUrl: v.url, titulo: v.titulo || "", caption: v.caption || "" }));
+      renderSelectedVideos();
     }
     publishOverlay.classList.add('open');
   }
@@ -2835,6 +3153,17 @@
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => switchContentType(btn.dataset.type));
   });
+
+  let selectedPdfFile = null;
+  let existingPdfUrl = null;
+
+  function showExistingPdf(url, name) {
+    selectedPdfFile = null;
+    existingPdfUrl = url;
+    document.getElementById('publish-pdf-name').textContent = name || "PDF ya adjunto";
+    document.getElementById('publish-pdf-preview').style.display = 'flex';
+    document.getElementById('publish-pdf-row').style.display = 'none';
+  }
 
   document.getElementById('publish-pdf-btn').addEventListener('click', () => document.getElementById('publish-pdf-input').click());
   document.getElementById('publish-pdf-input').addEventListener('change', (e) => {
@@ -2849,12 +3178,14 @@
       return;
     }
     selectedPdfFile = file;
+    existingPdfUrl = null;
     document.getElementById('publish-pdf-name').textContent = file.name;
     document.getElementById('publish-pdf-preview').style.display = 'flex';
     document.getElementById('publish-pdf-row').style.display = 'none';
   });
   document.getElementById('publish-pdf-remove').addEventListener('click', () => {
     selectedPdfFile = null;
+    existingPdfUrl = null;
     document.getElementById('publish-pdf-input').value = "";
     document.getElementById('publish-pdf-preview').style.display = 'none';
     document.getElementById('publish-pdf-row').style.display = 'block';
@@ -2862,114 +3193,108 @@
 
   document.getElementById('publish-audio-btn').addEventListener('click', () => document.getElementById('publish-audio-input').click());
   document.getElementById('publish-audio-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files || []);
     const errorEl = document.getElementById('publish-error');
     errorEl.classList.remove('show');
-    if (!file) return;
-    if (file.size > FILE_MAX_BYTES) {
-      errorEl.textContent = "El audio pesa más de 50MB.";
-      errorEl.classList.add('show');
-      e.target.value = "";
-      return;
-    }
-    try {
-      const duration = await readMediaDuration(file, 'audio');
-      if (duration > AUDIO_MAX_SECONDS) {
-        errorEl.textContent = "El audio dura más de 5 minutos.";
+    for (const file of files) {
+      if (file.size > FILE_MAX_BYTES) {
+        errorEl.textContent = `"${file.name}" pesa más de 50MB y no se agregó.`;
         errorEl.classList.add('show');
-        e.target.value = "";
-        return;
+        continue;
       }
-    } catch {
-      errorEl.textContent = "No se pudo leer el archivo de audio.";
-      errorEl.classList.add('show');
-      e.target.value = "";
-      return;
+      try {
+        const duration = await readMediaDuration(file, 'audio');
+        if (duration > AUDIO_MAX_SECONDS) {
+          errorEl.textContent = `"${file.name}" dura más de 5 minutos y no se agregó.`;
+          errorEl.classList.add('show');
+          continue;
+        }
+      } catch {
+        errorEl.textContent = `No se pudo leer "${file.name}" y no se agregó.`;
+        errorEl.classList.add('show');
+        continue;
+      }
+      selectedAudios.push({ file, titulo: "", caption: "", previewUrl: URL.createObjectURL(file) });
     }
-    selectedAudioFile = file;
-    document.getElementById('publish-audio-player').src = URL.createObjectURL(file);
-    document.getElementById('publish-audio-preview').style.display = 'block';
-    document.getElementById('publish-audio-row').style.display = 'none';
-  });
-  document.getElementById('publish-audio-remove').addEventListener('click', () => {
-    selectedAudioFile = null;
-    document.getElementById('publish-audio-input').value = "";
-    document.getElementById('publish-audio-preview').style.display = 'none';
-    document.getElementById('publish-audio-row').style.display = 'block';
+    e.target.value = "";
+    renderSelectedAudios();
   });
 
   document.getElementById('publish-video-btn').addEventListener('click', () => document.getElementById('publish-video-input').click());
   document.getElementById('publish-video-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files || []);
     const errorEl = document.getElementById('publish-error');
     errorEl.classList.remove('show');
-    if (!file) return;
-    if (file.size > FILE_MAX_BYTES) {
-      errorEl.textContent = "El video pesa más de 50MB.";
-      errorEl.classList.add('show');
-      e.target.value = "";
-      return;
-    }
-    try {
-      const duration = await readMediaDuration(file, 'video');
-      if (duration > VIDEO_MAX_SECONDS) {
-        errorEl.textContent = "El video dura más de 2 minutos.";
+    for (const file of files) {
+      if (file.size > FILE_MAX_BYTES) {
+        errorEl.textContent = `"${file.name}" pesa más de 50MB y no se agregó.`;
         errorEl.classList.add('show');
-        e.target.value = "";
-        return;
+        continue;
       }
-    } catch {
-      errorEl.textContent = "No se pudo leer el archivo de video.";
-      errorEl.classList.add('show');
-      e.target.value = "";
-      return;
-    }
-    selectedVideoFile = file;
-    document.getElementById('publish-video-player').src = URL.createObjectURL(file);
-    document.getElementById('publish-video-preview').style.display = 'block';
-    document.getElementById('publish-video-row').style.display = 'none';
-  });
-  document.getElementById('publish-video-remove').addEventListener('click', () => {
-    selectedVideoFile = null;
-    document.getElementById('publish-video-input').value = "";
-    document.getElementById('publish-video-preview').style.display = 'none';
-    document.getElementById('publish-video-row').style.display = 'block';
-  });
-
-  document.querySelectorAll('.mode-option').forEach(opt => {
-    opt.addEventListener('click', async () => {
-      document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-      selectedMode = opt.dataset.mode;
-      selectedGroupIds = new Set();
-
-      document.getElementById('selectivo-picker').style.display = 'none';
-      document.getElementById('grupal-picker').style.display = 'none';
-      document.getElementById('new-group-form').style.display = 'none';
-
-      if (selectedMode === 'selectivo') {
-        document.getElementById('selectivo-picker').style.display = 'block';
-        const list = document.getElementById('followers-list');
-        const searchInput = document.getElementById('followers-search');
-        const folderFilter = document.getElementById('followers-folder-filter');
-        searchInput.style.display = 'none';
-        folderFilter.style.display = 'none';
-        list.innerHTML = `<div class="spinner-row">Cargando…</div>`;
-        const mine = getMyProfile();
-        const followers = await getMyFollowers(mine.id);
-        if (followers.length === 0) {
-          list.innerHTML = `<div class="sheet-hint" style="margin:0;">Todavía nadie te ha añadido con tu código, así que no hay a quién autorizar.</div>`;
-        } else {
-          list.innerHTML = followers.map(followerCheckRowHTML).join("");
-          searchInput.style.display = 'block';
-          const carpetas = await getMyCarpetas(mine.id);
-          wireFollowerFilters(searchInput, list, folderFilter, carpetas);
+      try {
+        const duration = await readMediaDuration(file, 'video');
+        if (duration > VIDEO_MAX_SECONDS) {
+          errorEl.textContent = `"${file.name}" dura más de 2 minutos y no se agregó.`;
+          errorEl.classList.add('show');
+          continue;
         }
-      } else if (selectedMode === 'grupal') {
-        document.getElementById('grupal-picker').style.display = 'block';
-        await loadGroupsPicker();
+      } catch {
+        errorEl.textContent = `No se pudo leer "${file.name}" y no se agregó.`;
+        errorEl.classList.add('show');
+        continue;
       }
-    });
+      selectedVideos.push({ file, titulo: "", caption: "", previewUrl: URL.createObjectURL(file) });
+    }
+    e.target.value = "";
+    renderSelectedVideos();
+  });
+
+  async function selectPublishMode(mode, preselect = null) {
+    document.querySelectorAll('#mode-options > [data-mode]').forEach(o => o.classList.toggle('selected', o.dataset.mode === mode));
+    selectedMode = mode;
+    selectedGroupIds = new Set();
+
+    document.getElementById('selectivo-picker').style.display = 'none';
+    document.getElementById('grupal-picker').style.display = 'none';
+    document.getElementById('new-group-form').style.display = 'none';
+
+    if (mode === 'selectivo') {
+      document.getElementById('selectivo-picker').style.display = 'block';
+      const list = document.getElementById('followers-list');
+      const searchInput = document.getElementById('followers-search');
+      const folderFilter = document.getElementById('followers-folder-filter');
+      searchInput.style.display = 'none';
+      folderFilter.style.display = 'none';
+      list.innerHTML = `<div class="spinner-row">Cargando…</div>`;
+      const mine = getMyProfile();
+      const followers = await getMyFollowers(mine.id);
+      if (followers.length === 0) {
+        list.innerHTML = `<div class="sheet-hint" style="margin:0;">Todavía nadie te ha añadido con tu código, así que no hay a quién autorizar.</div>`;
+      } else {
+        list.innerHTML = followers.map(followerCheckRowHTML).join("");
+        searchInput.style.display = 'block';
+        const carpetas = await getMyCarpetas(mine.id);
+        wireFollowerFilters(searchInput, list, folderFilter, carpetas);
+        if (Array.isArray(preselect)) {
+          list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if (preselect.includes(cb.value)) cb.checked = true;
+          });
+        }
+      }
+    } else if (mode === 'grupal') {
+      document.getElementById('grupal-picker').style.display = 'block';
+      if (typeof preselect === 'string' && preselect) {
+        const mine = getMyProfile();
+        const groups = await getMyGroups(mine.id);
+        const names = preselect.split(',').map(s => s.trim());
+        groups.forEach(g => { if (names.includes(g.nombre)) selectedGroupIds.add(g.id); });
+      }
+      await loadGroupsPicker();
+    }
+  }
+
+  document.querySelectorAll('#mode-options > [data-mode]').forEach(opt => {
+    opt.addEventListener('click', () => selectPublishMode(opt.dataset.mode));
   });
 
   async function loadGroupsPicker() {
@@ -3292,13 +3617,19 @@
     list.innerHTML = selectedImages.map((img, i) => `
       <div class="publish-image-item" data-index="${i}">
         <img src="${img.file ? img.previewUrl : img.existingUrl}">
-        <input type="text" class="sheet-input publish-image-caption" placeholder="Descripción de esta imagen (opcional)" maxlength="140" value="${escapeHtml(img.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+        <div class="publish-image-caption" style="display:flex; flex-direction:column; gap:6px;">
+          <input type="text" class="sheet-input publish-image-title" placeholder="Título de esta imagen (opcional)" maxlength="80" value="${escapeHtml(img.titulo || '').replace(/"/g, '&quot;')}" style="margin:0;">
+          <input type="text" class="sheet-input publish-image-description" placeholder="Descripción de esta imagen (opcional)" maxlength="140" value="${escapeHtml(img.caption).replace(/"/g, '&quot;')}" style="margin:0;">
+        </div>
         <button type="button" class="publish-image-remove" title="Quitar">✕</button>
       </div>
     `).join("");
     list.querySelectorAll('.publish-image-item').forEach(item => {
       const i = parseInt(item.dataset.index, 10);
-      item.querySelector('.publish-image-caption').addEventListener('input', (e) => {
+      item.querySelector('.publish-image-title').addEventListener('input', (e) => {
+        selectedImages[i].titulo = e.target.value;
+      });
+      item.querySelector('.publish-image-description').addEventListener('input', (e) => {
         selectedImages[i].caption = e.target.value;
       });
       item.querySelector('.publish-image-remove').addEventListener('click', () => {
@@ -3315,7 +3646,7 @@
   document.getElementById('publish-photo-input').addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
     files.forEach(file => {
-      selectedImages.push({ file, caption: "", previewUrl: URL.createObjectURL(file) });
+      selectedImages.push({ file, titulo: "", caption: "", previewUrl: URL.createObjectURL(file) });
     });
     e.target.value = "";
     renderSelectedImages();
@@ -3323,6 +3654,7 @@
 
   let selectedCoverFile = null;
   let coverExistingUrl = null;
+  let coverCropRect = null; // {x,y,width,height} en píxeles de la imagen original, o null = sin recortar
 
   document.getElementById('publish-cover-btn').addEventListener('click', () => {
     document.getElementById('publish-cover-input').click();
@@ -3330,15 +3662,30 @@
   document.getElementById('publish-cover-input').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    selectedCoverFile = file;
-    coverExistingUrl = null;
-    document.getElementById('publish-cover-img').src = URL.createObjectURL(file);
-    document.getElementById('publish-cover-preview').style.display = 'block';
-    document.getElementById('publish-cover-row').style.display = 'none';
+    document.getElementById('publish-cover-input').value = "";
+    openCoverAdjuster(URL.createObjectURL(file), (cropRect, meta) => {
+      selectedCoverFile = file;
+      coverExistingUrl = null;
+      coverCropRect = cropRect;
+      paintCoverBox(document.getElementById('publish-cover-box'), meta.url, cropRect ? { natW: meta.natW, natH: meta.natH, ...cropRect } : null);
+      document.getElementById('publish-cover-preview').style.display = 'block';
+      document.getElementById('publish-cover-row').style.display = 'none';
+    });
+  });
+  document.getElementById('publish-cover-adjust-btn').addEventListener('click', () => {
+    const url = selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : coverExistingUrl;
+    if (!url) return;
+    openCoverAdjuster(url, (cropRect, meta) => {
+      coverCropRect = cropRect;
+      paintCoverBox(document.getElementById('publish-cover-box'), meta.url, cropRect ? { natW: meta.natW, natH: meta.natH, ...cropRect } : null);
+      document.getElementById('publish-cover-preview').style.display = 'block';
+      document.getElementById('publish-cover-row').style.display = 'none';
+    });
   });
   document.getElementById('publish-cover-remove').addEventListener('click', () => {
     selectedCoverFile = null;
     coverExistingUrl = null;
+    coverCropRect = null;
     document.getElementById('publish-cover-input').value = "";
     document.getElementById('publish-cover-preview').style.display = 'none';
     document.getElementById('publish-cover-row').style.display = 'block';
@@ -3346,30 +3693,224 @@
   function showExistingCover(url) {
     selectedCoverFile = null;
     coverExistingUrl = url;
-    document.getElementById('publish-cover-img').src = url;
+    coverCropRect = null;
+    paintCoverBox(document.getElementById('publish-cover-box'), url, null);
     document.getElementById('publish-cover-preview').style.display = 'block';
     document.getElementById('publish-cover-row').style.display = 'none';
+  }
+
+  // Pinta una caja de vista previa (16:9) con una imagen completa (sin recorte) o recortada según `crop`.
+  // Reutilizable para la portada general del post y para la imagen de referencia de cada recurso individual.
+  function paintCoverBox(box, url, crop) {
+    box.style.backgroundImage = `url('${url}')`;
+    if (!crop) {
+      box.style.backgroundSize = 'contain';
+      box.style.backgroundPosition = 'center';
+    } else {
+      const { natW, natH, x, y, width, height } = crop;
+      box.style.backgroundSize = `${(natW / width) * 100}% ${(natH / height) * 100}%`;
+      const posX = width >= natW ? 50 : (x / (natW - width)) * 100;
+      const posY = height >= natH ? 50 : (y / (natH - height)) * 100;
+      box.style.backgroundPosition = `${posX}% ${posY}%`;
+    }
+  }
+
+  // ---------- Ajustador de recorte (arrastrar + zoom) ----------
+  // Genérico: cualquier llamador pasa una url y recibe, al confirmar, el recorte elegido (o null)
+  // junto con las dimensiones naturales de la imagen, vía el callback `onConfirm(cropRect, {url, natW, natH})`.
+
+  let coverAdjust = null; // { url, natW, natH, frameW, frameH, minScale, scale, x, y }
+  let coverAdjustConfirm = null;
+
+  function openCoverAdjuster(url, onConfirm) {
+    coverAdjustConfirm = onConfirm;
+    document.getElementById('cover-adjust-error').classList.remove('show');
+    const img = document.getElementById('cover-adjust-img');
+    const frame = document.getElementById('cover-adjust-frame');
+    img.src = url;
+    img.onload = () => {
+      const frameRect = frame.getBoundingClientRect();
+      const natW = img.naturalWidth, natH = img.naturalHeight;
+      const minScale = Math.max(frameRect.width / natW, frameRect.height / natH);
+      coverAdjust = {
+        url, natW, natH,
+        frameW: frameRect.width, frameH: frameRect.height,
+        minScale, scale: minScale,
+        x: (frameRect.width - natW * minScale) / 2,
+        y: (frameRect.height - natH * minScale) / 2
+      };
+      document.getElementById('cover-adjust-zoom').value = 100;
+      applyCoverAdjustTransform();
+    };
+    document.getElementById('cover-adjust-overlay').classList.add('open');
+  }
+
+  function clampCoverPan() {
+    const c = coverAdjust;
+    const scaledW = c.natW * c.scale, scaledH = c.natH * c.scale;
+    const minX = Math.min(0, c.frameW - scaledW), maxX = 0;
+    const minY = Math.min(0, c.frameH - scaledH), maxY = 0;
+    c.x = Math.max(minX, Math.min(maxX, c.x));
+    c.y = Math.max(minY, Math.min(maxY, c.y));
+  }
+
+  function applyCoverAdjustTransform() {
+    if (!coverAdjust) return;
+    clampCoverPan();
+    const img = document.getElementById('cover-adjust-img');
+    img.style.width = `${coverAdjust.natW}px`;
+    img.style.height = `${coverAdjust.natH}px`;
+    img.style.transform = `translate(${coverAdjust.x}px, ${coverAdjust.y}px) scale(${coverAdjust.scale})`;
+  }
+
+  const coverFrame = document.getElementById('cover-adjust-frame');
+  let coverDrag = null;
+  coverFrame.addEventListener('pointerdown', (e) => {
+    if (!coverAdjust) return;
+    coverDrag = { startX: e.clientX, startY: e.clientY, origX: coverAdjust.x, origY: coverAdjust.y };
+    coverFrame.setPointerCapture(e.pointerId);
+    coverFrame.style.cursor = 'grabbing';
+  });
+  coverFrame.addEventListener('pointermove', (e) => {
+    if (!coverDrag || !coverAdjust) return;
+    coverAdjust.x = coverDrag.origX + (e.clientX - coverDrag.startX);
+    coverAdjust.y = coverDrag.origY + (e.clientY - coverDrag.startY);
+    applyCoverAdjustTransform();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => {
+    coverFrame.addEventListener(ev, () => { coverDrag = null; coverFrame.style.cursor = 'grab'; });
+  });
+  document.getElementById('cover-adjust-zoom').addEventListener('input', (e) => {
+    if (!coverAdjust) return;
+    const factor = e.target.value / 100;
+    // Mantiene centrado el punto medio del marco al hacer zoom.
+    const cx = coverAdjust.frameW / 2, cy = coverAdjust.frameH / 2;
+    const relX = (cx - coverAdjust.x) / coverAdjust.scale;
+    const relY = (cy - coverAdjust.y) / coverAdjust.scale;
+    coverAdjust.scale = coverAdjust.minScale * factor;
+    coverAdjust.x = cx - relX * coverAdjust.scale;
+    coverAdjust.y = cy - relY * coverAdjust.scale;
+    applyCoverAdjustTransform();
+  });
+
+  document.getElementById('cover-adjust-close').addEventListener('click', () => {
+    document.getElementById('cover-adjust-overlay').classList.remove('open');
+  });
+  document.getElementById('cover-adjust-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+
+  document.getElementById('cover-adjust-skip').addEventListener('click', () => {
+    if (coverAdjustConfirm) coverAdjustConfirm(null, { url: coverAdjust.url, natW: coverAdjust.natW, natH: coverAdjust.natH });
+    document.getElementById('cover-adjust-overlay').classList.remove('open');
+  });
+
+  document.getElementById('cover-adjust-save').addEventListener('click', () => {
+    if (!coverAdjust) return;
+    const c = coverAdjust;
+    const cropX = Math.max(0, Math.round((0 - c.x) / c.scale));
+    const cropY = Math.max(0, Math.round((0 - c.y) / c.scale));
+    const cropW = Math.min(c.natW - cropX, Math.round(c.frameW / c.scale));
+    const cropH = Math.min(c.natH - cropY, Math.round(c.frameH / c.scale));
+    const cropRect = { x: cropX, y: cropY, width: cropW, height: cropH };
+    if (coverAdjustConfirm) coverAdjustConfirm(cropRect, { url: c.url, natW: c.natW, natH: c.natH });
+    document.getElementById('cover-adjust-overlay').classList.remove('open');
+  });
+
+  // ---------- Imagen de referencia por recurso (audio y texto) ----------
+
+  let itemCoverPendingTarget = null; // { kind: 'audio' | 'text', index }
+
+  document.getElementById('item-cover-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file || !itemCoverPendingTarget) return;
+    const { kind, index } = itemCoverPendingTarget;
+    const arr = kind === 'audio' ? selectedAudios : selectedTextFragments;
+    const item = arr[index];
+    if (!item) return;
+    const previewUrl = URL.createObjectURL(file);
+    openCoverAdjuster(previewUrl, (cropRect, meta) => {
+      item.imgFile = file;
+      item.imgExistingUrl = null;
+      item.imgPreviewUrl = previewUrl;
+      item.imgCropRect = cropRect;
+      item.imgNatW = meta.natW;
+      item.imgNatH = meta.natH;
+      if (kind === 'audio') renderSelectedAudios(); else renderTextFragments();
+    });
+  });
+
+  function wireItemCoverPicker(container, kind, index, item, rerender) {
+    const addBtn = container.querySelector('.item-cover-add');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      itemCoverPendingTarget = { kind, index };
+      document.getElementById('item-cover-input').click();
+    });
+    const box = container.querySelector('.item-cover-box');
+    if (box) {
+      const url = item.imgFile ? item.imgPreviewUrl : item.imgExistingUrl;
+      paintCoverBox(box, url, item.imgCropRect ? { natW: item.imgNatW, natH: item.imgNatH, ...item.imgCropRect } : null);
+    }
+    const adjustBtn = container.querySelector('.item-cover-adjust');
+    if (adjustBtn) adjustBtn.addEventListener('click', () => {
+      const url = item.imgFile ? item.imgPreviewUrl : item.imgExistingUrl;
+      openCoverAdjuster(url, (cropRect, meta) => {
+        item.imgCropRect = cropRect;
+        item.imgNatW = meta.natW;
+        item.imgNatH = meta.natH;
+        rerender();
+      });
+    });
+    const removeBtn = container.querySelector('.item-cover-remove');
+    if (removeBtn) removeBtn.addEventListener('click', () => {
+      if (item.imgPreviewUrl) URL.revokeObjectURL(item.imgPreviewUrl);
+      item.imgFile = null; item.imgExistingUrl = null; item.imgCropRect = null;
+      item.imgPreviewUrl = null; item.imgNatW = null; item.imgNatH = null;
+      rerender();
+    });
+  }
+
+  function itemCoverPickerHTML(item) {
+    const hasImage = !!(item.imgFile || item.imgExistingUrl);
+    return hasImage ? `
+      <div class="item-cover-box" style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-s); background:var(--bg-elevated); background-repeat:no-repeat; border:1px solid var(--line); margin-top:8px;"></div>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <button type="button" class="copy-btn item-cover-adjust" style="flex:1; font-size:0.78rem; padding:7px;">Ajustar recorte</button>
+        <button type="button" class="copy-btn item-cover-remove" style="flex:1; font-size:0.78rem; padding:7px;">Quitar imagen</button>
+      </div>
+    ` : `
+      <button type="button" class="copy-btn item-cover-add" style="width:100%; margin-top:8px; font-size:0.78rem; padding:7px;">+ Imagen de referencia (opcional)</button>
+    `;
   }
 
   document.getElementById('publish-submit').addEventListener('click', async () => {
     const titulo = document.getElementById('publish-title').value.trim();
     const descripcion = document.getElementById('publish-description').value.trim();
-    const texto = document.getElementById('publish-text').value.trim();
+    const textFragments = selectedTextFragments
+      .map(f => ({ ...f, titulo: f.titulo.trim(), texto: f.texto.trim() }))
+      .filter(f => f.texto.length > 0);
+    const texto = textFragments[0]?.texto || "";
     const errorEl = document.getElementById('publish-error');
     errorEl.classList.remove('show');
 
-    if (selectedContentType === 'texto' && !texto && !selectedPdfFile) {
-      errorEl.textContent = "Escribe algo o adjunta un PDF antes de publicar.";
+    if (selectedContentType === 'texto' && textFragments.length === 0) {
+      errorEl.textContent = "Escribe algo antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
-    if (!editingPostId && selectedContentType === 'audio' && !selectedAudioFile) {
-      errorEl.textContent = "Adjunta un audio antes de publicar.";
+    if (selectedContentType === 'pdf' && !selectedPdfFile && !existingPdfUrl) {
+      errorEl.textContent = "Adjunta un PDF antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
-    if (!editingPostId && selectedContentType === 'video' && !selectedVideoFile) {
-      errorEl.textContent = "Adjunta un video antes de publicar.";
+    if (selectedContentType === 'audio' && selectedAudios.length === 0) {
+      errorEl.textContent = "Adjunta al menos un audio antes de publicar.";
+      errorEl.classList.add('show');
+      return;
+    }
+    if (selectedContentType === 'video' && selectedVideos.length === 0) {
+      errorEl.textContent = "Adjunta al menos un video antes de publicar.";
       errorEl.classList.add('show');
       return;
     }
@@ -3380,14 +3921,14 @@
     }
     let autorizados = [];
     let grupoNombre = null;
-    if (!editingPostId && selectedMode === 'selectivo') {
+    if (selectedMode === 'selectivo') {
       autorizados = Array.from(document.querySelectorAll('#followers-list input:checked')).map(i => i.value);
       if (autorizados.length === 0) {
         errorEl.textContent = "Elige al menos una persona para este modo.";
         errorEl.classList.add('show');
         return;
       }
-    } else if (!editingPostId && selectedMode === 'grupal') {
+    } else if (selectedMode === 'grupal') {
       if (selectedGroupIds.size === 0) {
         errorEl.textContent = "Elige al menos un grupo, o crea uno nuevo.";
         errorEl.classList.add('show');
@@ -3419,44 +3960,119 @@
             btn.textContent = `Comprimiendo imagen ${i + 1} de ${selectedImages.length}…`;
             const blob = await compressImage(selectedImages[i].file);
             const url = await uploadPostImage(blob, mine.id, onProgress(`Subiendo imagen ${i + 1} de ${selectedImages.length}`));
-            uploaded.push({ url, caption: selectedImages[i].caption.trim() });
+            uploaded.push({ url, titulo: selectedImages[i].titulo.trim(), caption: selectedImages[i].caption.trim() });
           } else {
-            uploaded.push({ url: selectedImages[i].existingUrl, caption: selectedImages[i].caption.trim() });
+            uploaded.push({ url: selectedImages[i].existingUrl, titulo: selectedImages[i].titulo.trim(), caption: selectedImages[i].caption.trim() });
           }
         }
         urls.imagenUrl = uploaded[0].url;
-        if (uploaded.length > 1 || uploaded[0].caption) {
+        if (uploaded.length > 1 || uploaded[0].caption || uploaded[0].titulo) {
           urls.galeria = uploaded;
         }
       }
-      if (selectedContentType === 'texto' && selectedPdfFile) {
-        urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf', onProgress("Subiendo PDF"));
+      if (selectedContentType === 'pdf') {
+        if (selectedPdfFile) {
+          urls.pdfUrl = await uploadPostFile(selectedPdfFile, mine.id, 'pdf', onProgress("Subiendo PDF"));
+        } else if (existingPdfUrl) {
+          urls.pdfUrl = existingPdfUrl;
+        }
       }
-      if (selectedContentType === 'audio' && selectedAudioFile) {
-        urls.audioUrl = await uploadPostFile(selectedAudioFile, mine.id, 'audio', onProgress("Subiendo audio"));
+      if (selectedContentType === 'texto' && textFragments.length > 0) {
+        const uploaded = [];
+        for (let i = 0; i < textFragments.length; i++) {
+          const f = textFragments[i];
+          let imagenUrl = null;
+          if (f.imgFile) {
+            btn.textContent = `Subiendo imagen del fragmento ${i + 1}…`;
+            imagenUrl = await uploadPostCoverImage(f.imgFile, mine.id, f.imgCropRect, onProgress(`Subiendo imagen del fragmento ${i + 1}`));
+          } else if (f.imgExistingUrl) {
+            imagenUrl = f.imgExistingUrl;
+          }
+          uploaded.push({ titulo: f.titulo, texto: f.texto, imagenUrl });
+        }
+        if (uploaded.length > 1 || uploaded[0].titulo || uploaded[0].imagenUrl) {
+          urls.galeriaTexto = uploaded;
+        }
       }
-      if (selectedContentType === 'video' && selectedVideoFile) {
-        urls.videoUrl = await uploadPostFile(selectedVideoFile, mine.id, 'video', onProgress("Subiendo video"));
+      if (selectedContentType === 'audio' && selectedAudios.length > 0) {
+        const uploaded = [];
+        for (let i = 0; i < selectedAudios.length; i++) {
+          let url;
+          if (selectedAudios[i].file) {
+            btn.textContent = `Subiendo audio ${i + 1} de ${selectedAudios.length}…`;
+            url = await uploadPostFile(selectedAudios[i].file, mine.id, 'audio', onProgress(`Subiendo audio ${i + 1} de ${selectedAudios.length}`));
+          } else {
+            url = selectedAudios[i].existingUrl;
+          }
+          let imagenUrl = null;
+          if (selectedAudios[i].imgFile) {
+            btn.textContent = `Subiendo imagen del audio ${i + 1}…`;
+            imagenUrl = await uploadPostCoverImage(selectedAudios[i].imgFile, mine.id, selectedAudios[i].imgCropRect, onProgress(`Subiendo imagen del audio ${i + 1}`));
+          } else if (selectedAudios[i].imgExistingUrl) {
+            imagenUrl = selectedAudios[i].imgExistingUrl;
+          }
+          uploaded.push({ url, titulo: selectedAudios[i].titulo.trim(), caption: selectedAudios[i].caption.trim(), imagenUrl });
+        }
+        urls.audioUrl = uploaded[0].url;
+        if (uploaded.length > 1 || uploaded[0].caption || uploaded[0].titulo || uploaded[0].imagenUrl) {
+          urls.galeriaAudio = uploaded;
+        }
       }
-      if (selectedContentType === 'texto' || selectedContentType === 'audio') {
+      if (selectedContentType === 'video' && selectedVideos.length > 0) {
+        const uploaded = [];
+        for (let i = 0; i < selectedVideos.length; i++) {
+          if (selectedVideos[i].file) {
+            btn.textContent = `Subiendo video ${i + 1} de ${selectedVideos.length}…`;
+            const url = await uploadPostFile(selectedVideos[i].file, mine.id, 'video', onProgress(`Subiendo video ${i + 1} de ${selectedVideos.length}`));
+            uploaded.push({ url, titulo: selectedVideos[i].titulo.trim(), caption: selectedVideos[i].caption.trim() });
+          } else {
+            uploaded.push({ url: selectedVideos[i].existingUrl, titulo: selectedVideos[i].titulo.trim(), caption: selectedVideos[i].caption.trim() });
+          }
+        }
+        urls.videoUrl = uploaded[0].url;
+        if (uploaded.length > 1 || uploaded[0].caption || uploaded[0].titulo) {
+          urls.galeriaVideo = uploaded;
+        }
+      }
+      if (selectedContentType === 'texto' || selectedContentType === 'audio' || selectedContentType === 'pdf') {
         if (selectedCoverFile) {
-          btn.textContent = "Comprimiendo imagen…";
-          const coverBlob = await compressImage(selectedCoverFile);
-          urls.imagenUrl = await uploadPostImage(coverBlob, mine.id, onProgress("Subiendo imagen"));
+          urls.imagenUrl = await uploadPostCoverImage(selectedCoverFile, mine.id, coverCropRect, onProgress("Subiendo imagen"));
         } else if (coverExistingUrl) {
           urls.imagenUrl = coverExistingUrl;
         } else if (editingPostId) {
           urls.imagenUrl = null;
         }
+      } else if (selectedContentType === 'imagen' || selectedContentType === 'video') {
+        if (selectedCoverFile) {
+          urls.portadaUrl = await uploadPostCoverImage(selectedCoverFile, mine.id, coverCropRect, onProgress("Subiendo portada"));
+        } else if (coverExistingUrl) {
+          urls.portadaUrl = coverExistingUrl;
+        } else if (editingPostId) {
+          urls.portadaUrl = null;
+        }
       }
       btn.textContent = editingPostId ? "Guardando…" : "Publicando…";
       if (editingPostId) {
-        const updates = { titulo: titulo || null, descripcion: descripcion || null };
+        const updates = { titulo: titulo || null, descripcion: descripcion || null, modo: selectedMode, autorizados, grupoNombre };
         if (selectedContentType === 'texto') updates.texto = texto;
+        if (selectedContentType === 'texto') updates.galeriaTexto = urls.galeriaTexto || null;
         if (selectedContentType === 'imagen') {
           updates.imagenUrl = urls.imagenUrl;
           updates.galeria = urls.galeria || null;
-        } else if (selectedContentType === 'texto' || selectedContentType === 'audio') {
+          updates.portadaUrl = urls.portadaUrl ?? null;
+        } else if (selectedContentType === 'audio') {
+          updates.audioUrl = urls.audioUrl;
+          updates.galeriaAudio = urls.galeriaAudio || null;
+          updates.imagenUrl = urls.imagenUrl ?? null;
+        } else if (selectedContentType === 'video') {
+          updates.videoUrl = urls.videoUrl;
+          updates.galeriaVideo = urls.galeriaVideo || null;
+          updates.videoThumbUrl = urls.videoUrl ? videoThumbUrl(urls.videoUrl) : null;
+          updates.portadaUrl = urls.portadaUrl ?? null;
+        } else if (selectedContentType === 'texto') {
+          updates.imagenUrl = urls.imagenUrl ?? null;
+        } else if (selectedContentType === 'pdf') {
+          updates.pdfUrl = urls.pdfUrl ?? null;
           updates.imagenUrl = urls.imagenUrl ?? null;
         }
         await updateDoc(doc(db, "publicaciones", editingPostId), updates);
